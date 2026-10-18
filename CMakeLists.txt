@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.16
+        VERSION 0.0.17
         LANGUAGES CXX
 )
 
@@ -42,6 +42,22 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(nlohmann_json)
 
+
+# cgltf - small glTF 2.0 loader
+
+FetchContent_Declare(
+        cgltf
+        GIT_REPOSITORY https://github.com/jkuhlmann/cgltf.git
+        GIT_TAG v1.15
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_GetProperties(cgltf)
+
+if(NOT cgltf_POPULATED)
+    FetchContent_Populate(cgltf)
+endif()
+
 add_executable(RAI
         src/main.cpp
 
@@ -49,6 +65,7 @@ add_executable(RAI
         src/engine/Renderer.cpp
 
         src/engine/render/Mesh.cpp
+        src/engine/render/ModelLoader.cpp
 
         src/engine/scene/Scene.cpp
         src/engine/scene/SceneSerializer.cpp
@@ -62,6 +79,7 @@ add_executable(RAI
 target_include_directories(RAI
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${cgltf_SOURCE_DIR}
 )
 
 target_link_libraries(RAI

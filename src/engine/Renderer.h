@@ -76,6 +76,10 @@ private:
 
     Mesh cubeMesh;
 
+    // First imported GLB/glTF mesh.
+    // 0.0.18+ will move this into AssetManager.
+    Mesh importedMesh;
+
     SDL_GPUTexture* depthTexture =
         nullptr;
 

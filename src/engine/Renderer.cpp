@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "render/Mesh.h"
+#include "render/ModelLoader.h"
 #include "scene/Scene.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -9,6 +10,7 @@
 #include <cstddef>
 #include <cstring>
 #include <fstream>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -373,6 +375,49 @@ bool Renderer::Initialize(
         );
 
         return false;
+    }
+
+    // =====================================================
+    // First imported model
+    //
+    // For this milestone Enemy_01 automatically uses
+    // assets/models/test.glb when the file is available.
+    // =====================================================
+
+    const std::string importedModelPath =
+        "assets/models/test.glb";
+
+    if (
+        std::filesystem::exists(
+            importedModelPath
+        )
+    )
+    {
+        if (
+            ModelLoader::LoadGLTF(
+                device,
+                importedModelPath,
+                importedMesh
+            )
+        )
+        {
+            SDL_Log(
+                "Imported model ready: %s",
+                importedModelPath.c_str()
+            );
+        }
+        else
+        {
+            SDL_Log(
+                "Imported model failed. Enemy will use cube fallback."
+            );
+        }
+    }
+    else
+    {
+        SDL_Log(
+            "No test GLB found. Enemy will use cube fallback."
+        );
     }
 
     if (
@@ -1277,6 +1322,19 @@ void Renderer::DrawEntity(
         sizeof(glm::vec4)
     );
 
+    if (
+        entity.prefab ==
+            "enemy_placeholder" &&
+        importedMesh.IsValid()
+    )
+    {
+        importedMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
     cubeMesh.Draw(
         renderPass
     );
@@ -1906,6 +1964,8 @@ void Renderer::Shutdown()
         offscreenSampler =
             nullptr;
     }
+
+    importedMesh.Destroy();
 
     cubeMesh.Destroy();
 

@@ -1,110 +1,246 @@
 {
-    "format": "RAI Scene",
-    "version": 2,
     "entities": [
         {
+            "collidable": false,
+            "color": [
+                0.10000000149011612,
+                0.10999999940395355,
+                0.12999999523162842,
+                1.0
+            ],
             "id": 1,
             "name": "Ground",
             "prefab": "ground_block",
-            "visible": true,
-            "collidable": false,
-            "color": [0.10, 0.11, 0.13, 1.0],
             "transform": {
-                "position": [0.0, -0.65, 0.0],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [9.0, 0.3, 9.0]
-            }
+                "position": [
+                    0.0,
+                    -0.6499999761581421,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    9.0,
+                    0.30000001192092896,
+                    9.0
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": false,
+            "color": [
+                0.75,
+                0.1599999964237213,
+                0.10000000149011612,
+                1.0
+            ],
             "id": 2,
             "name": "Player",
             "prefab": "player_placeholder",
-            "visible": true,
-            "collidable": false,
-            "color": [0.75, 0.16, 0.10, 1.0],
             "transform": {
-                "position": [0.0, 0.0, 0.0],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [0.7, 1.0, 0.7]
-            }
+                "position": [
+                    -0.4322570264339447,
+                    0.0,
+                    -0.29366743564605713
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.699999988079071,
+                    1.0,
+                    0.699999988079071
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": true,
+            "color": [
+                0.3499999940395355,
+                0.6499999761581421,
+                0.18000000715255737,
+                1.0
+            ],
             "id": 3,
             "name": "Enemy_01",
             "prefab": "enemy_placeholder",
-            "visible": true,
-            "collidable": true,
-            "color": [0.35, 0.65, 0.18, 1.0],
             "transform": {
-                "position": [3.0, 0.0, -2.8],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [0.75, 1.0, 0.75]
-            }
+                "position": [
+                    -0.4790022075176239,
+                    0.0,
+                    3.401120901107788
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.75,
+                    1.0,
+                    0.75
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": true,
+            "color": [
+                0.30000001192092896,
+                0.3100000023841858,
+                0.3400000035762787,
+                1.0
+            ],
             "id": 4,
             "name": "Pillar_01",
             "prefab": "stone_pillar",
-            "visible": true,
-            "collidable": true,
-            "color": [0.30, 0.31, 0.34, 1.0],
             "transform": {
-                "position": [-2.2, 0.5, 1.6],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [0.65, 2.0, 0.65]
-            }
+                "position": [
+                    -2.200000047683716,
+                    0.5,
+                    1.600000023841858
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.6499999761581421,
+                    2.0,
+                    0.6499999761581421
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": true,
+            "color": [
+                0.25,
+                0.27000001072883606,
+                0.3100000023841858,
+                1.0
+            ],
             "id": 5,
             "name": "Pillar_02",
             "prefab": "stone_pillar",
-            "visible": true,
-            "collidable": true,
-            "color": [0.25, 0.27, 0.31, 1.0],
             "transform": {
-                "position": [2.1, 0.25, -1.7],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [0.9, 1.5, 0.9]
-            }
+                "position": [
+                    2.0999999046325684,
+                    0.25,
+                    -1.7000000476837158
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.8999999761581421,
+                    1.5,
+                    0.8999999761581421
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": true,
+            "color": [
+                0.2199999988079071,
+                0.23000000417232513,
+                0.25999999046325684,
+                1.0
+            ],
             "id": 6,
             "name": "Wall_01",
             "prefab": "stone_wall",
-            "visible": true,
-            "collidable": true,
-            "color": [0.22, 0.23, 0.26, 1.0],
             "transform": {
-                "position": [0.0, 0.0, 2.8],
-                "rotation": [0.0, 0.0, 0.0],
-                "scale": [4.0, 1.0, 0.45]
-            }
+                "position": [
+                    0.0,
+                    0.0,
+                    2.799999952316284
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    4.0,
+                    1.0,
+                    0.44999998807907104
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": true,
+            "color": [
+                0.18000000715255737,
+                0.20000000298023224,
+                0.23999999463558197,
+                1.0
+            ],
             "id": 7,
             "name": "Ruin_01",
             "prefab": "ruin_block",
-            "visible": true,
-            "collidable": true,
-            "color": [0.18, 0.20, 0.24, 1.0],
             "transform": {
-                "position": [-2.8, -0.20, -2.4],
-                "rotation": [0.0, 20.0, 0.0],
-                "scale": [1.4, 0.6, 1.0]
-            }
+                "position": [
+                    -2.799999952316284,
+                    -0.20000000298023224,
+                    -2.4000000953674316
+                ],
+                "rotation": [
+                    0.0,
+                    20.0,
+                    0.0
+                ],
+                "scale": [
+                    1.399999976158142,
+                    0.6000000238418579,
+                    1.0
+                ]
+            },
+            "visible": true
         },
         {
+            "collidable": true,
+            "color": [
+                0.2800000011920929,
+                0.2199999988079071,
+                0.20000000298023224,
+                1.0
+            ],
             "id": 8,
             "name": "Ruin_02",
             "prefab": "ruin_block",
-            "visible": true,
-            "collidable": true,
-            "color": [0.28, 0.22, 0.20, 1.0],
             "transform": {
-                "position": [2.8, -0.10, 2.0],
-                "rotation": [0.0, -25.0, 0.0],
-                "scale": [1.2, 0.8, 1.2]
-            }
+                "position": [
+                    2.799999952316284,
+                    -0.10000000149011612,
+                    2.0
+                ],
+                "rotation": [
+                    0.0,
+                    -25.0,
+                    0.0
+                ],
+                "scale": [
+                    1.2000000476837158,
+                    0.800000011920929,
+                    1.2000000476837158
+                ]
+            },
+            "visible": true
         }
-    ]
+    ],
+    "format": "RAI Scene",
+    "version": 2
 }
