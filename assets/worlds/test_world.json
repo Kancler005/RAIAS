@@ -1,201 +1,109 @@
 {
     "format": "RAI Scene",
-    "version": 1,
+    "version": 2,
     "entities": [
         {
+            "id": 1,
             "name": "Ground",
+            "prefab": "ground_block",
             "visible": true,
             "collidable": false,
-            "color": [
-                0.10,
-                0.11,
-                0.13,
-                1.0
-            ],
+            "color": [0.10, 0.11, 0.13, 1.0],
             "transform": {
-                "position": [
-                    0.0,
-                    -0.65,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    9.0,
-                    0.3,
-                    9.0
-                ]
+                "position": [0.0, -0.65, 0.0],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [9.0, 0.3, 9.0]
             }
         },
         {
+            "id": 2,
             "name": "Player",
+            "prefab": "player_placeholder",
             "visible": true,
             "collidable": false,
-            "color": [
-                0.75,
-                0.16,
-                0.10,
-                1.0
-            ],
+            "color": [0.75, 0.16, 0.10, 1.0],
             "transform": {
-                "position": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    0.7,
-                    1.0,
-                    0.7
-                ]
+                "position": [0.0, 0.0, 0.0],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [0.7, 1.0, 0.7]
             }
         },
         {
+            "id": 3,
+            "name": "Enemy_01",
+            "prefab": "enemy_placeholder",
+            "visible": true,
+            "collidable": true,
+            "color": [0.35, 0.65, 0.18, 1.0],
+            "transform": {
+                "position": [3.0, 0.0, -2.8],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [0.75, 1.0, 0.75]
+            }
+        },
+        {
+            "id": 4,
             "name": "Pillar_01",
+            "prefab": "stone_pillar",
             "visible": true,
             "collidable": true,
-            "color": [
-                0.30,
-                0.31,
-                0.34,
-                1.0
-            ],
+            "color": [0.30, 0.31, 0.34, 1.0],
             "transform": {
-                "position": [
-                    -2.2,
-                    0.5,
-                    1.6
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    0.65,
-                    2.0,
-                    0.65
-                ]
+                "position": [-2.2, 0.5, 1.6],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [0.65, 2.0, 0.65]
             }
         },
         {
+            "id": 5,
             "name": "Pillar_02",
+            "prefab": "stone_pillar",
             "visible": true,
             "collidable": true,
-            "color": [
-                0.25,
-                0.27,
-                0.31,
-                1.0
-            ],
+            "color": [0.25, 0.27, 0.31, 1.0],
             "transform": {
-                "position": [
-                    2.1,
-                    0.25,
-                    -1.7
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    0.9,
-                    1.5,
-                    0.9
-                ]
+                "position": [2.1, 0.25, -1.7],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [0.9, 1.5, 0.9]
             }
         },
         {
+            "id": 6,
             "name": "Wall_01",
+            "prefab": "stone_wall",
             "visible": true,
             "collidable": true,
-            "color": [
-                0.22,
-                0.23,
-                0.26,
-                1.0
-            ],
+            "color": [0.22, 0.23, 0.26, 1.0],
             "transform": {
-                "position": [
-                    0.0,
-                    0.0,
-                    2.8
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    4.0,
-                    1.0,
-                    0.45
-                ]
+                "position": [0.0, 0.0, 2.8],
+                "rotation": [0.0, 0.0, 0.0],
+                "scale": [4.0, 1.0, 0.45]
             }
         },
         {
+            "id": 7,
             "name": "Ruin_01",
+            "prefab": "ruin_block",
             "visible": true,
             "collidable": true,
-            "color": [
-                0.18,
-                0.20,
-                0.24,
-                1.0
-            ],
+            "color": [0.18, 0.20, 0.24, 1.0],
             "transform": {
-                "position": [
-                    -2.8,
-                    -0.20,
-                    -2.4
-                ],
-                "rotation": [
-                    0.0,
-                    20.0,
-                    0.0
-                ],
-                "scale": [
-                    1.4,
-                    0.6,
-                    1.0
-                ]
+                "position": [-2.8, -0.20, -2.4],
+                "rotation": [0.0, 20.0, 0.0],
+                "scale": [1.4, 0.6, 1.0]
             }
         },
         {
+            "id": 8,
             "name": "Ruin_02",
+            "prefab": "ruin_block",
             "visible": true,
             "collidable": true,
-            "color": [
-                0.28,
-                0.22,
-                0.20,
-                1.0
-            ],
+            "color": [0.28, 0.22, 0.20, 1.0],
             "transform": {
-                "position": [
-                    2.8,
-                    -0.10,
-                    2.0
-                ],
-                "rotation": [
-                    0.0,
-                    -25.0,
-                    0.0
-                ],
-                "scale": [
-                    1.2,
-                    0.8,
-                    1.2
-                ]
+                "position": [2.8, -0.10, 2.0],
+                "rotation": [0.0, -25.0, 0.0],
+                "scale": [1.2, 0.8, 1.2]
             }
         }
     ]

@@ -6,6 +6,10 @@ void GameWorld::CreateDefaultWorld(
     Scene& scene
 )
 {
+    // =====================================================
+    // Ground
+    // =====================================================
+
     Entity& ground =
         scene.CreateEntity(
             "Ground",
@@ -73,6 +77,41 @@ void GameWorld::CreateDefaultWorld(
         false;
 
     // =====================================================
+    // Enemy
+    // =====================================================
+
+    Entity& enemy =
+        scene.CreateEntity(
+            "Enemy_01",
+            "enemy_placeholder"
+        );
+
+    enemy.transform.position =
+    {
+        3.0f,
+        0.0f,
+        -2.8f
+    };
+
+    enemy.transform.scale =
+    {
+        0.75f,
+        1.0f,
+        0.75f
+    };
+
+    enemy.color =
+    {
+        0.35f,
+        0.65f,
+        0.18f,
+        1.0f
+    };
+
+    enemy.collidable =
+        true;
+
+    // =====================================================
     // Pillar 01
     // =====================================================
 
@@ -85,8 +124,8 @@ void GameWorld::CreateDefaultWorld(
     pillar01.transform.position =
     {
         -2.2f,
-         0.5f,
-         1.6f
+        0.5f,
+        1.6f
     };
 
     pillar01.transform.scale =
@@ -119,8 +158,8 @@ void GameWorld::CreateDefaultWorld(
 
     pillar02.transform.position =
     {
-         2.1f,
-         0.25f,
+        2.1f,
+        0.25f,
         -1.7f
     };
 

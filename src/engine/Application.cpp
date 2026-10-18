@@ -2,6 +2,8 @@
 
 #include "engine/physics/CollisionSystem.h"
 #include "engine/scene/SceneSerializer.h"
+
+#include "game/EnemySystem.h"
 #include "game/GameWorld.h"
 
 #include <glm/glm.hpp>
@@ -36,7 +38,7 @@ bool Application::Initialize()
 
     window =
         SDL_CreateWindow(
-            "RAI: Ashes of Eternity | Engine 0.0.14",
+            "RAI: Ashes of Eternity | Engine 0.0.15",
             1280,
             720,
             SDL_WINDOW_RESIZABLE
@@ -68,7 +70,7 @@ bool Application::Initialize()
     }
 
     // =====================================================
-    // Load World
+    // Load Scene
     // =====================================================
 
     if (
@@ -92,14 +94,7 @@ bool Application::Initialize()
         );
     }
 
-    // =====================================================
-    // Player
-    // =====================================================
-
-    player =
-        scene.FindEntity(
-            "Player"
-        );
+    RebuildGameState();
 
     if (
         player == nullptr
@@ -132,10 +127,85 @@ bool Application::Initialize()
     );
 
     SDL_Log(
+        "Enemies: %zu",
+        gameState.enemyIds.size()
+    );
+
+    SDL_Log(
         "F5 = Save Scene | F9 = Reload Scene"
     );
 
     return true;
+}
+
+// =========================================================
+// Rebuild Game State
+// =========================================================
+
+void Application::RebuildGameState()
+{
+    gameState.Clear();
+
+    player =
+        nullptr;
+
+    for (
+        Entity& entity :
+        scene.GetEntities()
+    )
+    {
+        // -------------------------------------------------
+        // Player
+        // -------------------------------------------------
+
+        if (
+            entity.prefab ==
+                "player_placeholder" ||
+            entity.name ==
+                "Player"
+        )
+        {
+            if (
+                gameState.playerId == 0
+            )
+            {
+                gameState.playerId =
+                    entity.id;
+            }
+        }
+
+        // -------------------------------------------------
+        // Enemies
+        // -------------------------------------------------
+
+        if (
+            entity.prefab ==
+            "enemy_placeholder"
+        )
+        {
+            gameState.enemyIds.push_back(
+                entity.id
+            );
+        }
+    }
+
+    if (
+        gameState.playerId != 0
+    )
+    {
+        player =
+            scene.FindEntityById(
+                gameState.playerId
+            );
+    }
+
+    SDL_Log(
+        "GameState rebuilt. Player=%llu | Enemies=%zu",
+        static_cast<unsigned long long>(
+            gameState.playerId
+        ),
+        gameState.enemyIds.size()
+    );
 }
 
 // =========================================================
@@ -166,10 +236,6 @@ void Application::ProcessEvents()
             SDL_EVENT_KEY_DOWN
         )
         {
-            // =================================================
-            // ESC
-            // =================================================
-
             if (
                 event.key.key ==
                 SDLK_ESCAPE
@@ -180,7 +246,7 @@ void Application::ProcessEvents()
             }
 
             // =================================================
-            // F5 - Save
+            // Save
             // =================================================
 
             if (
@@ -195,7 +261,7 @@ void Application::ProcessEvents()
             }
 
             // =================================================
-            // F9 - Reload
+            // Reload
             // =================================================
 
             if (
@@ -210,10 +276,7 @@ void Application::ProcessEvents()
                     )
                 )
                 {
-                    player =
-                        scene.FindEntity(
-                            "Player"
-                        );
+                    RebuildGameState();
 
                     playerVelocity =
                         glm::vec3(
@@ -225,9 +288,7 @@ void Application::ProcessEvents()
                     )
                     {
                         camera.target =
-                            player
-                                ->transform
-                                .position;
+                            player->transform.position;
 
                         SDL_Log(
                             "World reloaded successfully."
@@ -266,7 +327,7 @@ void Application::Update(
         );
 
     // =====================================================
-    // Camera-relative directions
+    // Camera-relative movement
     // =====================================================
 
     glm::vec3 movementForward{
@@ -296,7 +357,7 @@ void Application::Update(
         );
 
     // =====================================================
-    // Input
+    // Player Input
     // =====================================================
 
     glm::vec3 inputDirection{
@@ -345,10 +406,6 @@ void Application::Update(
             movementRight;
     }
 
-    // =====================================================
-    // Desired velocity
-    // =====================================================
-
     glm::vec3 desiredVelocity{
         0.0f,
         0.0f,
@@ -376,7 +433,7 @@ void Application::Update(
     }
 
     // =====================================================
-    // Smooth acceleration / deceleration
+    // Smooth Player Movement
     // =====================================================
 
     const float smoothingSpeed =
@@ -398,8 +455,6 @@ void Application::Update(
             velocityBlend
         );
 
-    // Stop tiny floating-point movement.
-
     if (
         !hasInput &&
         glm::dot(
@@ -414,10 +469,6 @@ void Application::Update(
             );
     }
 
-    // =====================================================
-    // Move with collision
-    // =====================================================
-
     const glm::vec3 movementDelta =
         playerVelocity *
         deltaTime;
@@ -429,7 +480,7 @@ void Application::Update(
     );
 
     // =====================================================
-    // Temporary world boundaries
+    // World Bounds
     // =====================================================
 
     player->transform.position.x =
@@ -447,7 +498,17 @@ void Application::Update(
         );
 
     // =====================================================
-    // Smooth Camera
+    // ENEMY AI
+    // =====================================================
+
+    EnemySystem::Update(
+        scene,
+        gameState,
+        deltaTime
+    );
+
+    // =====================================================
+    // Camera
     // =====================================================
 
     camera.UpdateFollow(

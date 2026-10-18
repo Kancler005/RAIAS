@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.9
+        VERSION 0.0.15
         LANGUAGES CXX
 )
 
@@ -11,9 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 
-# ---------------------------------------------------------
 # SDL3
-# ---------------------------------------------------------
 
 FetchContent_Declare(
         SDL3
@@ -28,9 +26,7 @@ set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(SDL3)
 
-# ---------------------------------------------------------
 # GLM
-# ---------------------------------------------------------
 
 FetchContent_Declare(
         glm
@@ -41,9 +37,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glm)
 
-# ---------------------------------------------------------
 # JSON
-# ---------------------------------------------------------
 
 FetchContent_Declare(
         nlohmann_json
@@ -54,9 +48,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(nlohmann_json)
 
-# ---------------------------------------------------------
 # RAI
-# ---------------------------------------------------------
 
 add_executable(RAI
         src/main.cpp
@@ -70,6 +62,7 @@ add_executable(RAI
         src/engine/physics/CollisionSystem.cpp
 
         src/game/GameWorld.cpp
+        src/game/EnemySystem.cpp
 )
 
 target_include_directories(RAI

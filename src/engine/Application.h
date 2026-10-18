@@ -4,6 +4,8 @@
 #include "Renderer.h"
 #include "scene/Scene.h"
 
+#include "game/GameState.h"
+
 #include <SDL3/SDL.h>
 
 #include <glm/glm.hpp>
@@ -24,6 +26,8 @@ private:
         float deltaTime
     );
 
+    void RebuildGameState();
+
 private:
     SDL_Window* window =
         nullptr;
@@ -34,6 +38,8 @@ private:
 
     Camera camera;
 
+    GameState gameState;
+
     Entity* player =
         nullptr;
 
@@ -42,10 +48,6 @@ private:
 
     Uint64 previousTicks =
         0;
-
-    // =====================================================
-    // Player movement
-    // =====================================================
 
     glm::vec3 playerVelocity{
         0.0f,
