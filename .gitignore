@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# CLion
+.idea/
+
+# CMake
+cmake-build-*/
+build/
+CMakeFiles/
+CMakeCache.txt
+
+# Compiled binaries
+*.o
+*.obj
+*.exe
+*.dll
+*.dylib
+
+# Logs
+*.log
