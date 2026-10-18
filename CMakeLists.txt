@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.21
+        VERSION 0.0.22
         LANGUAGES CXX
 )
 
@@ -145,6 +145,7 @@ add_executable(RAI
         src/engine/Renderer.cpp
 
         src/engine/render/Mesh.cpp
+        src/engine/render/GlyphRenderer.cpp
         src/engine/render/ModelLoader.cpp
 
         src/engine/scene/Scene.cpp

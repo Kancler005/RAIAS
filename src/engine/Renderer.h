@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "render/Mesh.h"
+#include "render/GlyphRenderer.h"
 
 #include <string>
 
@@ -87,6 +88,11 @@ private:
     // First imported GLB/glTF mesh.
     // 0.0.18+ will move this into AssetManager.
     Mesh importedMesh;
+
+    // World-space ASCII layer.
+    // Unlike the old full-screen postprocess, these glyphs live
+    // at real 3D positions and use the scene depth buffer.
+    GlyphRenderer glyphRenderer;
 
     SDL_GPUTexture* depthTexture =
         nullptr;

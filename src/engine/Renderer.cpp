@@ -450,6 +450,43 @@ bool Renderer::Initialize(
         return false;
     }
 
+    if (
+        !glyphRenderer.Initialize(
+            device,
+            SDL_GetGPUSwapchainTextureFormat(
+                device,
+                window
+            ),
+            asciiAtlasTexture,
+            offscreenSampler
+        )
+    )
+    {
+        SDL_Log(
+            "World GlyphRenderer initialization failed."
+        );
+
+        return false;
+    }
+
+    if (
+        !glyphRenderer.CreateGroundGrid(
+            -4.35f,
+             4.35f,
+            -4.35f,
+             4.35f,
+             0.34f,
+            -0.46f
+        )
+    )
+    {
+        SDL_Log(
+            "World Glyph Grid creation failed."
+        );
+
+        return false;
+    }
+
     SDL_Log(
         "ASCII atlas created: %ux%u",
         ASCII_ATLAS_WIDTH,
@@ -1318,6 +1355,29 @@ void Renderer::DrawEntity(
     glm::vec4 renderColor =
         entity.color;
 
+    // =====================================================
+    // ASCII Renderer V2 foundation
+    //
+    // Ground still writes depth, but its old mesh color is
+    // hidden so the visible floor comes from world-space glyphs.
+    // Selecting Ground in the editor still highlights it.
+    // =====================================================
+
+    if (
+        entity.prefab ==
+            "ground_block" &&
+        !entity.editorSelected
+    )
+    {
+        renderColor =
+        {
+            0.0f,
+            0.0f,
+            0.0f,
+            1.0f
+        };
+    }
+
     if (
         entity.editorSelected
     )
@@ -1569,8 +1629,9 @@ bool Renderer::Render(
     depthTarget.load_op =
         SDL_GPU_LOADOP_CLEAR;
 
+    // World-space glyphs reuse this depth texture later.
     depthTarget.store_op =
-        SDL_GPU_STOREOP_DONT_CARE;
+        SDL_GPU_STOREOP_STORE;
 
     depthTarget.stencil_load_op =
         SDL_GPU_LOADOP_DONT_CARE;
@@ -1881,6 +1942,104 @@ bool Renderer::Render(
 
     // =====================================================
     // PASS 3
+    // WORLD-SPACE GLYPHS -> SCREEN
+    //
+    // These are real 3D-positioned glyph billboards.
+    // They are NOT sent through the full-screen ASCII filter.
+    // =====================================================
+
+    const glm::vec3 cameraPosition =
+        camera.target +
+        camera.offset;
+
+    const glm::vec3 cameraForward =
+        glm::normalize(
+            camera.target -
+            cameraPosition
+        );
+
+    glm::vec3 cameraRight =
+        glm::cross(
+            glm::vec3(
+                0.0f,
+                1.0f,
+                0.0f
+            ),
+            cameraForward
+        );
+
+    if (
+        glm::dot(
+            cameraRight,
+            cameraRight
+        ) <
+        0.000001f
+    )
+    {
+        cameraRight =
+        {
+            1.0f,
+            0.0f,
+            0.0f
+        };
+    }
+    else
+    {
+        cameraRight =
+            glm::normalize(
+                cameraRight
+            );
+    }
+
+    glm::vec3 cameraUp =
+        glm::cross(
+            cameraForward,
+            cameraRight
+        );
+
+    if (
+        glm::dot(
+            cameraUp,
+            cameraUp
+        ) <
+        0.000001f
+    )
+    {
+        cameraUp =
+        {
+            0.0f,
+            1.0f,
+            0.0f
+        };
+    }
+    else
+    {
+        cameraUp =
+            glm::normalize(
+                cameraUp
+            );
+    }
+
+    if (
+        !glyphRenderer.Render(
+            commandBuffer,
+            swapchain,
+            depthTexture,
+            viewProjection,
+            cameraRight,
+            cameraUp
+        )
+    )
+    {
+        SDL_CancelGPUCommandBuffer(
+            commandBuffer
+        );
+
+        return false;
+    }
+
+    // =====================================================
+    // PASS 4
     // IMGUI EDITOR UI -> SWAPCHAIN
     // =====================================================
 
@@ -2022,6 +2181,8 @@ void Renderer::Shutdown()
 
     historyValid =
         false;
+
+    glyphRenderer.Shutdown();
 
     if (
         asciiAtlasTexture != nullptr
