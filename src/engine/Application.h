@@ -6,10 +6,11 @@
 
 #include <SDL3/SDL.h>
 
+#include <glm/glm.hpp>
+
 class Application
 {
 public:
-
     bool Initialize();
 
     void Run();
@@ -17,7 +18,6 @@ public:
     void Shutdown();
 
 private:
-
     void ProcessEvents();
 
     void Update(
@@ -25,7 +25,6 @@ private:
     );
 
 private:
-
     SDL_Window* window =
         nullptr;
 
@@ -44,7 +43,13 @@ private:
     Uint64 previousTicks =
         0;
 
+    // =====================================================
+    // Player movement
+    // =====================================================
+
     glm::vec3 playerVelocity{
+        0.0f,
+        0.0f,
         0.0f
     };
 
@@ -52,8 +57,8 @@ private:
         2.6f;
 
     float acceleration =
-        10.0f;
+        8.0f;
 
     float deceleration =
-        8.0f;
+        10.0f;
 };

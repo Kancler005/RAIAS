@@ -61,6 +61,7 @@ namespace
     {
         glm::vec4 screenAndCell;
         glm::vec4 atlasInfo;
+        glm::vec4 temporalInfo;
     };
 
     // =====================================================
@@ -1192,7 +1193,7 @@ bool Renderer::CreatePipelines()
         LoadShader(
             "assets/shaders/compiled/msl/postprocess.frag.msl",
             SDL_GPU_SHADERSTAGE_FRAGMENT,
-            2,
+            3,
             1
         );
 
@@ -1740,6 +1741,7 @@ bool Renderer::Render(
     if (
         depthTexture == nullptr ||
         offscreenColorTexture == nullptr ||
+        historyColorTexture == nullptr ||
         width != renderWidth ||
         height != renderHeight
     )
@@ -1770,6 +1772,19 @@ bool Renderer::Render(
                 nullptr;
         }
 
+        if (
+            historyColorTexture != nullptr
+        )
+        {
+            SDL_ReleaseGPUTexture(
+                device,
+                historyColorTexture
+            );
+
+            historyColorTexture =
+                nullptr;
+        }
+
         depthTexture =
             CreateDepthTexture(
                 width,
@@ -1782,9 +1797,19 @@ bool Renderer::Render(
                 height
             );
 
+        historyColorTexture =
+            CreateOffscreenColorTexture(
+                width,
+                height
+            );
+
+        historyValid =
+            false;
+
         if (
             depthTexture == nullptr ||
-            offscreenColorTexture == nullptr
+            offscreenColorTexture == nullptr ||
+            historyColorTexture == nullptr
         )
         {
             SDL_CancelGPUCommandBuffer(
@@ -2008,7 +2033,7 @@ bool Renderer::Render(
     );
 
     SDL_GPUTextureSamplerBinding
-        samplerBindings[2]{};
+        samplerBindings[3]{};
 
     // 3D scene
 
@@ -2026,11 +2051,19 @@ bool Renderer::Render(
     samplerBindings[1].sampler =
         offscreenSampler;
 
+    // Previous 3D frame for temporal stabilization
+
+    samplerBindings[2].texture =
+        historyColorTexture;
+
+    samplerBindings[2].sampler =
+        offscreenSampler;
+
     SDL_BindGPUFragmentSamplers(
         postPass,
         0,
         samplerBindings,
-        2
+        3
     );
 
     // =====================================================
@@ -2071,6 +2104,14 @@ bool Renderer::Render(
         0.0f
     };
 
+    asciiData.temporalInfo =
+    {
+        historyValid ? 0.58f : 0.0f,
+        historyValid ? 1.0f : 0.0f,
+        0.0f,
+        0.0f
+    };
+
     SDL_PushGPUFragmentUniformData(
         commandBuffer,
         0,
@@ -2091,6 +2132,80 @@ bool Renderer::Render(
     );
 
     // =====================================================
+    // Save current 3D frame as history
+    // =====================================================
+
+    SDL_GPUCopyPass* historyCopyPass =
+        SDL_BeginGPUCopyPass(
+            commandBuffer
+        );
+
+    if (
+        historyCopyPass == nullptr
+    )
+    {
+        SDL_CancelGPUCommandBuffer(
+            commandBuffer
+        );
+
+        return false;
+    }
+
+    SDL_GPUTextureLocation historySource{};
+
+    historySource.texture =
+        offscreenColorTexture;
+
+    historySource.mip_level =
+        0;
+
+    historySource.layer =
+        0;
+
+    historySource.x =
+        0;
+
+    historySource.y =
+        0;
+
+    historySource.z =
+        0;
+
+    SDL_GPUTextureLocation historyDestination{};
+
+    historyDestination.texture =
+        historyColorTexture;
+
+    historyDestination.mip_level =
+        0;
+
+    historyDestination.layer =
+        0;
+
+    historyDestination.x =
+        0;
+
+    historyDestination.y =
+        0;
+
+    historyDestination.z =
+        0;
+
+    SDL_CopyGPUTextureToTexture(
+        historyCopyPass,
+        &historySource,
+        &historyDestination,
+        width,
+        height,
+        1,
+        false
+    );
+
+    SDL_EndGPUCopyPass(
+        historyCopyPass
+    );
+
+    // =====================================================
     // Submit
     // =====================================================
 
@@ -2107,6 +2222,9 @@ bool Renderer::Render(
 
         return false;
     }
+
+    historyValid =
+        true;
 
     return true;
 }
@@ -2153,6 +2271,22 @@ void Renderer::Shutdown()
         offscreenColorTexture =
             nullptr;
     }
+
+    if (
+        historyColorTexture != nullptr
+    )
+    {
+        SDL_ReleaseGPUTexture(
+            device,
+            historyColorTexture
+        );
+
+        historyColorTexture =
+            nullptr;
+    }
+
+    historyValid =
+        false;
 
     if (
         asciiAtlasTexture != nullptr

@@ -9,7 +9,6 @@
 class Camera
 {
 public:
-
     glm::vec3 target{
         0.0f,
         0.0f,
@@ -25,6 +24,8 @@ public:
     float halfHeight =
         5.0f;
 
+    // Было 7.0.
+    // Теперь камера двигается заметно мягче.
     float followSpeed =
         2.8f;
 
@@ -40,11 +41,12 @@ public:
                 deltaTime
             );
 
-        target = glm::mix(
-            target,
-            desiredTarget,
-            blend
-        );
+        target =
+            glm::mix(
+                target,
+                desiredTarget,
+                blend
+            );
     }
 
     [[nodiscard]]
@@ -81,6 +83,8 @@ public:
                  100.0f
             );
 
-        return projection * view;
+        return
+            projection *
+            view;
     }
 };

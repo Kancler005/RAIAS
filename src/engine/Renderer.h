@@ -84,6 +84,9 @@ private:
     SDL_GPUTexture* offscreenColorTexture =
         nullptr;
 
+    SDL_GPUTexture* historyColorTexture =
+        nullptr;
+
     SDL_GPUTexture* asciiAtlasTexture =
         nullptr;
 
@@ -95,4 +98,7 @@ private:
 
     Uint32 renderHeight =
         0;
+
+    bool historyValid =
+        false;
 };

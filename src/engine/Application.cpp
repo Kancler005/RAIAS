@@ -6,16 +6,25 @@
 
 #include <glm/glm.hpp>
 
+#include <cmath>
+
 namespace
 {
     constexpr const char* WORLD_PATH =
         "assets/worlds/test_world.json";
 }
 
+// =========================================================
+// Initialize
+// =========================================================
+
 bool Application::Initialize()
 {
-    if (!SDL_Init(
-            SDL_INIT_VIDEO))
+    if (
+        !SDL_Init(
+            SDL_INIT_VIDEO
+        )
+    )
     {
         SDL_Log(
             "SDL init failed: %s",
@@ -27,13 +36,15 @@ bool Application::Initialize()
 
     window =
         SDL_CreateWindow(
-            "RAI: Ashes of Eternity | Engine 0.0.13",
+            "RAI: Ashes of Eternity | Engine 0.0.13.1",
             1280,
             720,
             SDL_WINDOW_RESIZABLE
         );
 
-    if (window == nullptr)
+    if (
+        window == nullptr
+    )
     {
         SDL_Log(
             "Window creation failed: %s",
@@ -43,8 +54,11 @@ bool Application::Initialize()
         return false;
     }
 
-    if (!renderer.Initialize(
-            window))
+    if (
+        !renderer.Initialize(
+            window
+        )
+    )
     {
         SDL_Log(
             "Renderer initialization failed."
@@ -53,9 +67,16 @@ bool Application::Initialize()
         return false;
     }
 
-    if (!SceneSerializer::Load(
+    // =====================================================
+    // Load World
+    // =====================================================
+
+    if (
+        !SceneSerializer::Load(
             scene,
-            WORLD_PATH))
+            WORLD_PATH
+        )
+    )
     {
         SDL_Log(
             "Could not load world. Creating default world."
@@ -71,12 +92,18 @@ bool Application::Initialize()
         );
     }
 
+    // =====================================================
+    // Player
+    // =====================================================
+
     player =
         scene.FindEntity(
             "Player"
         );
 
-    if (player == nullptr)
+    if (
+        player == nullptr
+    )
     {
         SDL_Log(
             "Player Entity not found."
@@ -87,6 +114,11 @@ bool Application::Initialize()
 
     camera.target =
         player->transform.position;
+
+    playerVelocity =
+        glm::vec3(
+            0.0f
+        );
 
     previousTicks =
         SDL_GetTicks();
@@ -105,6 +137,10 @@ bool Application::Initialize()
 
     return true;
 }
+
+// =========================================================
+// Events
+// =========================================================
 
 void Application::ProcessEvents()
 {
@@ -130,6 +166,10 @@ void Application::ProcessEvents()
             SDL_EVENT_KEY_DOWN
         )
         {
+            // =================================================
+            // ESC
+            // =================================================
+
             if (
                 event.key.key ==
                 SDLK_ESCAPE
@@ -138,6 +178,10 @@ void Application::ProcessEvents()
                 running =
                     false;
             }
+
+            // =================================================
+            // F5 - Save
+            // =================================================
 
             if (
                 event.key.key ==
@@ -149,6 +193,10 @@ void Application::ProcessEvents()
                     WORLD_PATH
                 );
             }
+
+            // =================================================
+            // F9 - Reload
+            // =================================================
 
             if (
                 event.key.key ==
@@ -167,12 +215,19 @@ void Application::ProcessEvents()
                             "Player"
                         );
 
+                    playerVelocity =
+                        glm::vec3(
+                            0.0f
+                        );
+
                     if (
                         player != nullptr
                     )
                     {
                         camera.target =
-                            player->transform.position;
+                            player
+                                ->transform
+                                .position;
 
                         SDL_Log(
                             "World reloaded successfully."
@@ -190,6 +245,10 @@ void Application::ProcessEvents()
     }
 }
 
+// =========================================================
+// Update
+// =========================================================
+
 void Application::Update(
     float deltaTime
 )
@@ -206,9 +265,13 @@ void Application::Update(
             nullptr
         );
 
+    // =====================================================
+    // Camera-relative directions
+    // =====================================================
+
     glm::vec3 movementForward{
         -camera.offset.x,
-        0.0f,
+         0.0f,
         -camera.offset.z
     };
 
@@ -232,7 +295,13 @@ void Application::Update(
             movementRight
         );
 
-    glm::vec3 movement{
+    // =====================================================
+    // Input
+    // =====================================================
+
+    glm::vec3 inputDirection{
+        0.0f,
+        0.0f,
         0.0f
     };
 
@@ -242,7 +311,7 @@ void Application::Update(
         ]
     )
     {
-        movement +=
+        inputDirection +=
             movementForward;
     }
 
@@ -252,7 +321,7 @@ void Application::Update(
         ]
     )
     {
-        movement -=
+        inputDirection -=
             movementForward;
     }
 
@@ -262,7 +331,7 @@ void Application::Update(
         ]
     )
     {
-        movement +=
+        inputDirection +=
             movementRight;
     }
 
@@ -272,33 +341,96 @@ void Application::Update(
         ]
     )
     {
-        movement -=
+        inputDirection -=
             movementRight;
     }
 
-    if (
+    // =====================================================
+    // Desired velocity
+    // =====================================================
+
+    glm::vec3 desiredVelocity{
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    const bool hasInput =
         glm::dot(
-            movement,
-            movement
-        ) > 0.0f
+            inputDirection,
+            inputDirection
+        ) > 0.0f;
+
+    if (
+        hasInput
     )
     {
-        movement =
+        inputDirection =
             glm::normalize(
-                movement
+                inputDirection
             );
 
-        const glm::vec3 movementDelta =
-            movement *
-            playerSpeed *
-            deltaTime;
-
-        CollisionSystem::Move(
-            scene,
-            *player,
-            movementDelta
-        );
+        desiredVelocity =
+            inputDirection *
+            playerSpeed;
     }
+
+    // =====================================================
+    // Smooth acceleration / deceleration
+    // =====================================================
+
+    const float smoothingSpeed =
+        hasInput
+            ? acceleration
+            : deceleration;
+
+    const float velocityBlend =
+        1.0f -
+        std::exp(
+            -smoothingSpeed *
+            deltaTime
+        );
+
+    playerVelocity =
+        glm::mix(
+            playerVelocity,
+            desiredVelocity,
+            velocityBlend
+        );
+
+    // Stop tiny floating-point movement.
+
+    if (
+        !hasInput &&
+        glm::dot(
+            playerVelocity,
+            playerVelocity
+        ) < 0.0001f
+    )
+    {
+        playerVelocity =
+            glm::vec3(
+                0.0f
+            );
+    }
+
+    // =====================================================
+    // Move with collision
+    // =====================================================
+
+    const glm::vec3 movementDelta =
+        playerVelocity *
+        deltaTime;
+
+    CollisionSystem::Move(
+        scene,
+        *player,
+        movementDelta
+    );
+
+    // =====================================================
+    // Temporary world boundaries
+    // =====================================================
 
     player->transform.position.x =
         glm::clamp(
@@ -314,11 +446,19 @@ void Application::Update(
             4.0f
         );
 
+    // =====================================================
+    // Smooth Camera
+    // =====================================================
+
     camera.UpdateFollow(
         player->transform.position,
         deltaTime
     );
 }
+
+// =========================================================
+// Run
+// =========================================================
 
 void Application::Run()
 {
@@ -365,6 +505,10 @@ void Application::Run()
         }
     }
 }
+
+// =========================================================
+// Shutdown
+// =========================================================
 
 void Application::Shutdown()
 {

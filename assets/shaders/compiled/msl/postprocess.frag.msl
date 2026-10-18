@@ -7,6 +7,7 @@ struct type_AsciiData
 {
     float4 screenAndCell;
     float4 atlasInfo;
+    float4 temporalInfo;
 };
 
 struct main0_out
@@ -14,51 +15,69 @@ struct main0_out
     float4 out_var_SV_Target0 [[color(0)]];
 };
 
-fragment main0_out main0(constant type_AsciiData& AsciiData [[buffer(0)]], texture2d<float> sceneTexture [[texture(0)]], texture2d<float> glyphAtlas [[texture(1)]], sampler sceneSampler [[sampler(0)]], sampler glyphSampler [[sampler(1)]], float4 gl_FragCoord [[position]])
+fragment main0_out main0(constant type_AsciiData& AsciiData [[buffer(0)]], texture2d<float> sceneTexture [[texture(0)]], texture2d<float> glyphAtlas [[texture(1)]], texture2d<float> historyTexture [[texture(2)]], sampler sceneSampler [[sampler(0)]], sampler glyphSampler [[sampler(1)]], sampler historySampler [[sampler(2)]], float4 gl_FragCoord [[position]])
 {
     main0_out out = {};
-    float4 _210;
+    float4 _271;
     do
     {
-        float2 _70 = gl_FragCoord.xy / AsciiData.screenAndCell.zw;
-        float2 _74 = (floor(_70) * AsciiData.screenAndCell.zw) + (AsciiData.screenAndCell.zw * 0.5);
-        float2 _77 = float2(AsciiData.screenAndCell.z * 0.300000011920928955078125, 0.0);
-        float2 _80 = float2(0.0, AsciiData.screenAndCell.w * 0.300000011920928955078125);
-        float2 _81 = AsciiData.screenAndCell.xy - float2(0.5);
-        float3 _88 = sceneTexture.sample(sceneSampler, (fast::clamp(_74, float2(0.5), _81) / AsciiData.screenAndCell.xy), level(0.0)).xyz;
-        float3 _96 = sceneTexture.sample(sceneSampler, (fast::clamp(_74 - _77, float2(0.5), _81) / AsciiData.screenAndCell.xy), level(0.0)).xyz;
-        float3 _104 = sceneTexture.sample(sceneSampler, (fast::clamp(_74 + _77, float2(0.5), _81) / AsciiData.screenAndCell.xy), level(0.0)).xyz;
-        float3 _112 = sceneTexture.sample(sceneSampler, (fast::clamp(_74 - _80, float2(0.5), _81) / AsciiData.screenAndCell.xy), level(0.0)).xyz;
-        float3 _120 = sceneTexture.sample(sceneSampler, (fast::clamp(_74 + _80, float2(0.5), _81) / AsciiData.screenAndCell.xy), level(0.0)).xyz;
-        float3 _126 = (((((_88 * 4.0) + _96) + _104) + _112) + _120) * float3(0.125);
-        float _127 = dot(_88, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-        float _128 = dot(_126, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-        float _129 = dot(_96, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-        float _130 = dot(_104, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-        float _131 = dot(_112, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-        float _132 = dot(_120, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
-        float _149 = precise::max(precise::max(abs(_129 - _130), abs(_131 - _132)), precise::max(precise::max(precise::max(abs(_127 - _129), abs(_127 - _130)), abs(_127 - _131)), abs(_127 - _132)));
-        bool _154;
-        if (_128 < 0.02500000037252902984619140625)
+        float2 _73 = gl_FragCoord.xy / AsciiData.screenAndCell.zw;
+        float2 _77 = (floor(_73) * AsciiData.screenAndCell.zw) + (AsciiData.screenAndCell.zw * 0.5);
+        float2 _80 = float2(AsciiData.screenAndCell.z * 0.300000011920928955078125, 0.0);
+        float2 _83 = float2(0.0, AsciiData.screenAndCell.w * 0.300000011920928955078125);
+        float2 _84 = AsciiData.screenAndCell.xy - float2(0.5);
+        float2 _86 = fast::clamp(_77, float2(0.5), _84) / AsciiData.screenAndCell.xy;
+        float3 _91 = sceneTexture.sample(sceneSampler, _86, level(0.0)).xyz;
+        float2 _94 = fast::clamp(_77 - _80, float2(0.5), _84) / AsciiData.screenAndCell.xy;
+        float3 _99 = sceneTexture.sample(sceneSampler, _94, level(0.0)).xyz;
+        float2 _102 = fast::clamp(_77 + _80, float2(0.5), _84) / AsciiData.screenAndCell.xy;
+        float3 _107 = sceneTexture.sample(sceneSampler, _102, level(0.0)).xyz;
+        float2 _110 = fast::clamp(_77 - _83, float2(0.5), _84) / AsciiData.screenAndCell.xy;
+        float3 _115 = sceneTexture.sample(sceneSampler, _110, level(0.0)).xyz;
+        float2 _118 = fast::clamp(_77 + _83, float2(0.5), _84) / AsciiData.screenAndCell.xy;
+        float3 _123 = sceneTexture.sample(sceneSampler, _118, level(0.0)).xyz;
+        float3 _129 = (((((_91 * 4.0) + _99) + _107) + _115) + _123) * float3(0.125);
+        float _130 = dot(_91, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+        float _131 = dot(_129, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+        float _132 = dot(_99, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+        float _133 = dot(_107, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+        float _134 = dot(_115, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+        float _135 = dot(_123, float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875));
+        float _152 = precise::max(precise::max(abs(_132 - _133), abs(_134 - _135)), precise::max(precise::max(precise::max(abs(_130 - _132), abs(_130 - _133)), abs(_130 - _134)), abs(_130 - _135)));
+        float _194;
+        if (AsciiData.temporalInfo.y > 0.5)
         {
-            _154 = _149 < 0.017999999225139617919921875;
+            _194 = mix(_131, dot((((((historyTexture.sample(historySampler, _86, level(0.0)).xyz * 4.0) + historyTexture.sample(historySampler, _94, level(0.0)).xyz) + historyTexture.sample(historySampler, _102, level(0.0)).xyz) + historyTexture.sample(historySampler, _110, level(0.0)).xyz) + historyTexture.sample(historySampler, _118, level(0.0)).xyz) * float3(0.125), float3(0.2125999927520751953125, 0.715200006961822509765625, 0.072200000286102294921875)), fast::clamp(AsciiData.temporalInfo.x, 0.0, 1.0));
         }
         else
         {
-            _154 = false;
+            _194 = _131;
         }
-        if (_154)
+        bool _199;
+        if (_131 < 0.02500000037252902984619140625)
         {
-            _210 = float4(0.0, 0.0, 0.0, 1.0);
+            _199 = _152 < 0.017999999225139617919921875;
+        }
+        else
+        {
+            _199 = false;
+        }
+        if (_199)
+        {
+            _271 = float4(0.0, 0.0, 0.0, 1.0);
             break;
         }
-        int _168 = max(int(AsciiData.atlasInfo.x), 1) - 1;
-        float2 _174 = fract(_70);
-        float3 _205 = (powr(fast::clamp(_126 * 1.64999997615814208984375, float3(0.0), float3(1.0)), float3(0.819999992847442626953125)) * (1.0 + (fast::clamp(_149 * 5.0, 0.0, 1.0) * 0.3499999940395355224609375))) * glyphAtlas.sample(glyphSampler, ((float2((float(clamp(int(rint(powr(fast::clamp(fast::clamp((_128 - 0.02500000037252902984619140625) * 2.7999999523162841796875, 0.0, 1.0) + (_149 * 3.5), 0.0, 1.0), 0.7200000286102294921875) * float(_168))), 0, _168)) * 8.0) + fast::clamp(floor(_174.x * 8.0), 0.0, 7.0), fast::clamp(floor(_174.y * 8.0), 0.0, 7.0)) + float2(0.5)) / AsciiData.atlasInfo.yz), level(0.0)).x;
-        _210 = float4(_205, 1.0);
+        int _213 = max(int(AsciiData.atlasInfo.x), 1) - 1;
+        float _215 = powr(fast::clamp(fast::clamp((_194 - 0.02500000037252902984619140625) * 2.7999999523162841796875, 0.0, 1.0) + (_152 * 3.2000000476837158203125), 0.0, 1.0), 0.7200000286102294921875) * float(_213);
+        int _218 = clamp(int(floor(_215)), 0, _213);
+        float2 _223 = fract(_73);
+        float _230 = fast::clamp(floor(_223.x * 8.0), 0.0, 7.0);
+        float _231 = fast::clamp(floor(_223.y * 8.0), 0.0, 7.0);
+        float3 _266 = (powr(fast::clamp(_129 * 1.5499999523162841796875, float3(0.0), float3(1.0)), float3(0.839999973773956298828125)) * (1.0 + (fast::clamp(_152 * 4.0, 0.0, 1.0) * 0.25))) * mix(glyphAtlas.sample(glyphSampler, ((float2((float(_218) * 8.0) + _230, _231) + float2(0.5)) / AsciiData.atlasInfo.yz), level(0.0)).x, glyphAtlas.sample(glyphSampler, ((float2((float(min((_218 + 1), _213)) * 8.0) + _230, _231) + float2(0.5)) / AsciiData.atlasInfo.yz), level(0.0)).x, smoothstep(0.25, 0.75, fract(_215)));
+        _271 = float4(_266, 1.0);
         break;
     } while(false);
-    out.out_var_SV_Target0 = _210;
+    out.out_var_SV_Target0 = _271;
     return out;
 }
 
