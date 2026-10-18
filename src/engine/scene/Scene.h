@@ -19,6 +19,10 @@ public:
         const std::string& prefab = "cube"
     );
 
+    bool DestroyEntity(
+        EntityId id
+    );
+
     Entity* FindEntity(
         const std::string& name
     );

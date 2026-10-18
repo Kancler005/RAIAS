@@ -1,5 +1,7 @@
 #include "Scene.h"
 
+#include <algorithm>
+
 Entity& Scene::CreateEntity(
     const std::string& name,
     const std::string& prefab
@@ -53,6 +55,38 @@ Entity& Scene::CreateEntityWithId(
     }
 
     return entities.back();
+}
+
+bool Scene::DestroyEntity(
+    EntityId id
+)
+{
+    const auto iterator =
+        std::find_if(
+            entities.begin(),
+            entities.end(),
+            [id](
+                const Entity& entity
+            )
+            {
+                return entity.id ==
+                    id;
+            }
+        );
+
+    if (
+        iterator ==
+        entities.end()
+    )
+    {
+        return false;
+    }
+
+    entities.erase(
+        iterator
+    );
+
+    return true;
 }
 
 Entity* Scene::FindEntity(

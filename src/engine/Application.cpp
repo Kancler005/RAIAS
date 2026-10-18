@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <string>
 
 namespace
 {
@@ -17,10 +18,10 @@ namespace
         "assets/worlds/test_world.json";
 
     constexpr const char* GAME_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.18";
+        "RAI: Ashes of Eternity | Engine 0.0.19";
 
     constexpr const char* EDITOR_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.18 | EDITOR MODE";
+        "RAI: Ashes of Eternity | Engine 0.0.19 | EDITOR MODE";
 }
 
 // =========================================================
@@ -340,6 +341,296 @@ void Application::SelectEditorEntity(
 }
 
 // =========================================================
+// Select Entity By ID
+// =========================================================
+
+void Application::SelectEditorEntityById(
+    EntityId id
+)
+{
+    ClearEditorSelection();
+
+    Entity* entity =
+        scene.FindEntityById(
+            id
+        );
+
+    if (
+        entity == nullptr
+    )
+    {
+        return;
+    }
+
+    entity->editorSelected =
+        true;
+
+    selectedEditorEntityId =
+        entity->id;
+
+    SDL_Log(
+        "[EDITOR] Selected: %s | id=%llu | prefab=%s",
+        entity->name.c_str(),
+        static_cast<unsigned long long>(
+            entity->id
+        ),
+        entity->prefab.c_str()
+    );
+}
+
+// =========================================================
+// Create Object
+// =========================================================
+
+void Application::CreateEditorObject()
+{
+    Entity& object =
+        scene.CreateEntity(
+            "New_Object",
+            "editor_cube"
+        );
+
+    object.name =
+        "Object_" +
+        std::to_string(
+            object.id
+        );
+
+    Entity* selected =
+        GetSelectedEditorEntity();
+
+    if (
+        selected != nullptr
+    )
+    {
+        object.transform.position =
+            selected->transform.position +
+            glm::vec3(
+                0.8f,
+                0.0f,
+                0.0f
+            );
+    }
+    else
+    {
+        object.transform.position =
+            camera.target +
+            glm::vec3(
+                0.8f,
+                0.0f,
+                0.0f
+            );
+    }
+
+    object.transform.rotation =
+        glm::vec3(
+            0.0f
+        );
+
+    object.transform.scale =
+        glm::vec3(
+            1.0f
+        );
+
+    object.color =
+    {
+        0.42f,
+        0.46f,
+        0.52f,
+        1.0f
+    };
+
+    object.visible =
+        true;
+
+    object.collidable =
+        true;
+
+    SelectEditorEntityById(
+        object.id
+    );
+
+    SDL_Log(
+        "[EDITOR] Created object: %s | id=%llu",
+        object.name.c_str(),
+        static_cast<unsigned long long>(
+            object.id
+        )
+    );
+}
+
+// =========================================================
+// Duplicate Object
+// =========================================================
+
+void Application::DuplicateSelectedEditorObject()
+{
+    Entity* source =
+        GetSelectedEditorEntity();
+
+    if (
+        source == nullptr
+    )
+    {
+        return;
+    }
+
+    // Do not duplicate the real player.
+    if (
+        source->id ==
+            gameState.playerId ||
+        source->name ==
+            "Player"
+    )
+    {
+        SDL_Log(
+            "[EDITOR] Player duplication is blocked."
+        );
+
+        return;
+    }
+
+    // Copy the source data BEFORE creating a new deque item.
+    // This avoids depending on reference stability during changes.
+    const std::string sourceName =
+        source->name;
+
+    const std::string sourcePrefab =
+        source->prefab;
+
+    const Transform sourceTransform =
+        source->transform;
+
+    const glm::vec4 sourceColor =
+        source->color;
+
+    const bool sourceVisible =
+        source->visible;
+
+    const bool sourceCollidable =
+        source->collidable;
+
+    Entity& copy =
+        scene.CreateEntity(
+            sourceName + "_Copy",
+            sourcePrefab
+        );
+
+    copy.name =
+        sourceName +
+        "_Copy_" +
+        std::to_string(
+            copy.id
+        );
+
+    copy.transform =
+        sourceTransform;
+
+    copy.transform.position.x +=
+        0.8f;
+
+    copy.color =
+        sourceColor;
+
+    copy.visible =
+        sourceVisible;
+
+    copy.collidable =
+        sourceCollidable;
+
+    SelectEditorEntityById(
+        copy.id
+    );
+
+    SDL_Log(
+        "[EDITOR] Duplicated: %s | id=%llu",
+        copy.name.c_str(),
+        static_cast<unsigned long long>(
+            copy.id
+        )
+    );
+}
+
+// =========================================================
+// Delete Object
+// =========================================================
+
+void Application::DeleteSelectedEditorObject()
+{
+    Entity* selected =
+        GetSelectedEditorEntity();
+
+    if (
+        selected == nullptr
+    )
+    {
+        return;
+    }
+
+    if (
+        selected->id ==
+            gameState.playerId ||
+        selected->name ==
+            "Player"
+    )
+    {
+        SDL_Log(
+            "[EDITOR] Player deletion is blocked."
+        );
+
+        return;
+    }
+
+    const EntityId deletedId =
+        selected->id;
+
+    const std::string deletedName =
+        selected->name;
+
+    ClearEditorSelection();
+
+    if (
+        !scene.DestroyEntity(
+            deletedId
+        )
+    )
+    {
+        SDL_Log(
+            "[EDITOR] Delete failed: id=%llu",
+            static_cast<unsigned long long>(
+                deletedId
+            )
+        );
+
+        return;
+    }
+
+    // deque erase can invalidate stored pointers,
+    // so reacquire Player immediately.
+    if (
+        gameState.playerId != 0
+    )
+    {
+        player =
+            scene.FindEntityById(
+                gameState.playerId
+            );
+    }
+
+    SDL_Log(
+        "[EDITOR] Deleted: %s | id=%llu",
+        deletedName.c_str(),
+        static_cast<unsigned long long>(
+            deletedId
+        )
+    );
+
+    SelectEditorEntity(
+        false
+    );
+}
+
+// =========================================================
 // Toggle Editor
 // =========================================================
 
@@ -397,6 +688,18 @@ void Application::ToggleEditorMode()
         );
 
         SDL_Log(
+            "N = create cube"
+        );
+
+        SDL_Log(
+            "CTRL/CMD + D = duplicate selected"
+        );
+
+        SDL_Log(
+            "DELETE/BACKSPACE = delete selected"
+        );
+
+        SDL_Log(
             "F5 = save world"
         );
 
@@ -416,6 +719,8 @@ void Application::ToggleEditorMode()
     }
 
     ClearEditorSelection();
+
+    RebuildGameState();
 
     SDL_SetWindowTitle(
         window,
@@ -509,6 +814,73 @@ void Application::ProcessEvents()
             SelectEditorEntity(
                 reverse
             );
+
+            continue;
+        }
+
+        // =================================================
+        // N - Create Object
+        // =================================================
+
+        if (
+            editorMode &&
+            event.key.scancode ==
+                SDL_SCANCODE_N
+        )
+        {
+            CreateEditorObject();
+
+            continue;
+        }
+
+        // =================================================
+        // CTRL/CMD + D - Duplicate
+        // =================================================
+
+        if (
+            editorMode &&
+            event.key.scancode ==
+                SDL_SCANCODE_D
+        )
+        {
+            const SDL_Keymod modifiers =
+                SDL_GetModState();
+
+            const bool duplicateModifier =
+                (
+                    modifiers &
+                    SDL_KMOD_CTRL
+                ) != 0 ||
+                (
+                    modifiers &
+                    SDL_KMOD_GUI
+                ) != 0;
+
+            if (
+                duplicateModifier
+            )
+            {
+                DuplicateSelectedEditorObject();
+
+                continue;
+            }
+        }
+
+        // =================================================
+        // DELETE / BACKSPACE - Delete
+        // =================================================
+
+        if (
+            editorMode &&
+            (
+                event.key.scancode ==
+                    SDL_SCANCODE_DELETE ||
+                event.key.scancode ==
+                    SDL_SCANCODE_BACKSPACE
+            )
+        )
+        {
+            DeleteSelectedEditorObject();
 
             continue;
         }

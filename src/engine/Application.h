@@ -46,6 +46,16 @@ private:
 
     Entity* GetSelectedEditorEntity();
 
+    void CreateEditorObject();
+
+    void DuplicateSelectedEditorObject();
+
+    void DeleteSelectedEditorObject();
+
+    void SelectEditorEntityById(
+        EntityId id
+    );
+
 private:
     SDL_Window* window =
         nullptr;
