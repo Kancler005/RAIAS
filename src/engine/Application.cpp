@@ -9,11 +9,18 @@
 #include <glm/glm.hpp>
 
 #include <cmath>
+#include <cstddef>
 
 namespace
 {
     constexpr const char* WORLD_PATH =
         "assets/worlds/test_world.json";
+
+    constexpr const char* GAME_TITLE =
+        "RAI: Ashes of Eternity | Engine 0.0.18";
+
+    constexpr const char* EDITOR_TITLE =
+        "RAI: Ashes of Eternity | Engine 0.0.18 | EDITOR MODE";
 }
 
 // =========================================================
@@ -38,7 +45,7 @@ bool Application::Initialize()
 
     window =
         SDL_CreateWindow(
-            "RAI: Ashes of Eternity | Engine 0.0.15",
+            GAME_TITLE,
             1280,
             720,
             SDL_WINDOW_RESIZABLE
@@ -132,7 +139,7 @@ bool Application::Initialize()
     );
 
     SDL_Log(
-        "F5 = Save Scene | F9 = Reload Scene"
+        "F1 = Editor Mode | F5 = Save | F9 = Reload"
     );
 
     return true;
@@ -154,9 +161,8 @@ void Application::RebuildGameState()
         scene.GetEntities()
     )
     {
-        // -------------------------------------------------
-        // Player
-        // -------------------------------------------------
+        entity.editorSelected =
+            false;
 
         if (
             entity.prefab ==
@@ -173,10 +179,6 @@ void Application::RebuildGameState()
                     entity.id;
             }
         }
-
-        // -------------------------------------------------
-        // Enemies
-        // -------------------------------------------------
 
         if (
             entity.prefab ==
@@ -209,6 +211,223 @@ void Application::RebuildGameState()
 }
 
 // =========================================================
+// Editor Selection
+// =========================================================
+
+void Application::ClearEditorSelection()
+{
+    for (
+        Entity& entity :
+        scene.GetEntities()
+    )
+    {
+        entity.editorSelected =
+            false;
+    }
+
+    selectedEditorEntityId =
+        0;
+}
+
+Entity* Application::GetSelectedEditorEntity()
+{
+    if (
+        selectedEditorEntityId == 0
+    )
+    {
+        return nullptr;
+    }
+
+    return scene.FindEntityById(
+        selectedEditorEntityId
+    );
+}
+
+void Application::SelectEditorEntity(
+    bool reverse
+)
+{
+    auto& entities =
+        scene.GetEntities();
+
+    if (
+        entities.empty()
+    )
+    {
+        ClearEditorSelection();
+
+        return;
+    }
+
+    std::size_t currentIndex =
+        0;
+
+    bool currentFound =
+        false;
+
+    for (
+        std::size_t i = 0;
+        i < entities.size();
+        ++i
+    )
+    {
+        if (
+            entities[i].id ==
+            selectedEditorEntityId
+        )
+        {
+            currentIndex =
+                i;
+
+            currentFound =
+                true;
+
+            break;
+        }
+    }
+
+    std::size_t nextIndex =
+        0;
+
+    if (
+        !currentFound
+    )
+    {
+        nextIndex =
+            reverse
+                ? entities.size() - 1
+                : 0;
+    }
+    else if (
+        reverse
+    )
+    {
+        nextIndex =
+            currentIndex == 0
+                ? entities.size() - 1
+                : currentIndex - 1;
+    }
+    else
+    {
+        nextIndex =
+            (
+                currentIndex + 1
+            ) %
+            entities.size();
+    }
+
+    ClearEditorSelection();
+
+    Entity& selected =
+        entities[
+            nextIndex
+        ];
+
+    selected.editorSelected =
+        true;
+
+    selectedEditorEntityId =
+        selected.id;
+
+    SDL_Log(
+        "[EDITOR] Selected: %s | id=%llu | prefab=%s",
+        selected.name.c_str(),
+        static_cast<unsigned long long>(
+            selected.id
+        ),
+        selected.prefab.c_str()
+    );
+}
+
+// =========================================================
+// Toggle Editor
+// =========================================================
+
+void Application::ToggleEditorMode()
+{
+    editorMode =
+        !editorMode;
+
+    playerVelocity =
+        glm::vec3(
+            0.0f
+        );
+
+    if (
+        editorMode
+    )
+    {
+        SDL_SetWindowTitle(
+            window,
+            EDITOR_TITLE
+        );
+
+        ClearEditorSelection();
+
+        SelectEditorEntity(
+            false
+        );
+
+        SDL_Log(
+            "=========================================="
+        );
+
+        SDL_Log(
+            "RAI EDITOR MODE ENABLED"
+        );
+
+        SDL_Log(
+            "TAB / SHIFT+TAB = select entity"
+        );
+
+        SDL_Log(
+            "ARROWS = move on ground"
+        );
+
+        SDL_Log(
+            "PAGE UP / PAGE DOWN = move vertically"
+        );
+
+        SDL_Log(
+            "Q / E = rotate Y"
+        );
+
+        SDL_Log(
+            "+ / - = scale"
+        );
+
+        SDL_Log(
+            "F5 = save world"
+        );
+
+        SDL_Log(
+            "F9 = reload world"
+        );
+
+        SDL_Log(
+            "F1 = return to gameplay"
+        );
+
+        SDL_Log(
+            "=========================================="
+        );
+
+        return;
+    }
+
+    ClearEditorSelection();
+
+    SDL_SetWindowTitle(
+        window,
+        GAME_TITLE
+    );
+
+    SDL_Log(
+        "RAI EDITOR MODE DISABLED"
+    );
+}
+
+// =========================================================
 // Events
 // =========================================================
 
@@ -232,75 +451,137 @@ void Application::ProcessEvents()
         }
 
         if (
-            event.type ==
+            event.type !=
             SDL_EVENT_KEY_DOWN
         )
         {
-            if (
-                event.key.key ==
-                SDLK_ESCAPE
-            )
-            {
-                running =
-                    false;
-            }
+            continue;
+        }
 
-            // =================================================
-            // Save
-            // =================================================
+        // =================================================
+        // ESC
+        // =================================================
 
+        if (
+            event.key.key ==
+            SDLK_ESCAPE
+        )
+        {
+            running =
+                false;
+
+            continue;
+        }
+
+        // =================================================
+        // F1 - Editor Mode
+        // =================================================
+
+        if (
+            event.key.key ==
+            SDLK_F1
+        )
+        {
+            ToggleEditorMode();
+
+            continue;
+        }
+
+        // =================================================
+        // TAB - Selection
+        // =================================================
+
+        if (
+            editorMode &&
+            event.key.key ==
+                SDLK_TAB
+        )
+        {
+            const SDL_Keymod modifiers =
+                SDL_GetModState();
+
+            const bool reverse =
+                (
+                    modifiers &
+                    SDL_KMOD_SHIFT
+                ) != 0;
+
+            SelectEditorEntity(
+                reverse
+            );
+
+            continue;
+        }
+
+        // =================================================
+        // F5 - Save
+        // =================================================
+
+        if (
+            event.key.key ==
+            SDLK_F5
+        )
+        {
+            SceneSerializer::Save(
+                scene,
+                WORLD_PATH
+            );
+
+            SDL_Log(
+                editorMode
+                    ? "[EDITOR] World saved."
+                    : "World saved."
+            );
+
+            continue;
+        }
+
+        // =================================================
+        // F9 - Reload
+        // =================================================
+
+        if (
+            event.key.key ==
+            SDLK_F9
+        )
+        {
             if (
-                event.key.key ==
-                SDLK_F5
-            )
-            {
-                SceneSerializer::Save(
+                SceneSerializer::Load(
                     scene,
                     WORLD_PATH
-                );
-            }
-
-            // =================================================
-            // Reload
-            // =================================================
-
-            if (
-                event.key.key ==
-                SDLK_F9
+                )
             )
             {
+                selectedEditorEntityId =
+                    0;
+
+                RebuildGameState();
+
+                playerVelocity =
+                    glm::vec3(
+                        0.0f
+                    );
+
                 if (
-                    SceneSerializer::Load(
-                        scene,
-                        WORLD_PATH
-                    )
+                    player != nullptr
                 )
                 {
-                    RebuildGameState();
-
-                    playerVelocity =
-                        glm::vec3(
-                            0.0f
-                        );
-
-                    if (
-                        player != nullptr
-                    )
-                    {
-                        camera.target =
-                            player->transform.position;
-
-                        SDL_Log(
-                            "World reloaded successfully."
-                        );
-                    }
-                    else
-                    {
-                        SDL_Log(
-                            "World reloaded, but Player is missing."
-                        );
-                    }
+                    camera.target =
+                        player->transform.position;
                 }
+
+                if (
+                    editorMode
+                )
+                {
+                    SelectEditorEntity(
+                        false
+                    );
+                }
+
+                SDL_Log(
+                    "World reloaded successfully."
+                );
             }
         }
     }
@@ -311,6 +592,30 @@ void Application::ProcessEvents()
 // =========================================================
 
 void Application::Update(
+    float deltaTime
+)
+{
+    if (
+        editorMode
+    )
+    {
+        UpdateEditor(
+            deltaTime
+        );
+
+        return;
+    }
+
+    UpdateGameplay(
+        deltaTime
+    );
+}
+
+// =========================================================
+// Gameplay Update
+// =========================================================
+
+void Application::UpdateGameplay(
     float deltaTime
 )
 {
@@ -480,7 +785,7 @@ void Application::Update(
     );
 
     // =====================================================
-    // World Bounds
+    // Temporary World Bounds
     // =====================================================
 
     player->transform.position.x =
@@ -498,7 +803,7 @@ void Application::Update(
         );
 
     // =====================================================
-    // ENEMY AI
+    // Enemy AI
     // =====================================================
 
     EnemySystem::Update(
@@ -515,6 +820,260 @@ void Application::Update(
         player->transform.position,
         deltaTime
     );
+}
+
+// =========================================================
+// Editor Update
+// =========================================================
+
+void Application::UpdateEditor(
+    float deltaTime
+)
+{
+    Entity* selected =
+        GetSelectedEditorEntity();
+
+    if (
+        selected == nullptr
+    )
+    {
+        SelectEditorEntity(
+            false
+        );
+
+        selected =
+            GetSelectedEditorEntity();
+
+        if (
+            selected == nullptr
+        )
+        {
+            return;
+        }
+    }
+
+    const bool* keyboard =
+        SDL_GetKeyboardState(
+            nullptr
+        );
+
+    // =====================================================
+    // Camera-relative editor movement
+    // =====================================================
+
+    glm::vec3 movementForward{
+        -camera.offset.x,
+         0.0f,
+        -camera.offset.z
+    };
+
+    movementForward =
+        glm::normalize(
+            movementForward
+        );
+
+    glm::vec3 movementRight =
+        glm::cross(
+            glm::vec3(
+                0.0f,
+                1.0f,
+                0.0f
+            ),
+            movementForward
+        );
+
+    movementRight =
+        glm::normalize(
+            movementRight
+        );
+
+    glm::vec3 movement{
+        0.0f
+    };
+
+    if (
+        keyboard[
+            SDL_SCANCODE_UP
+        ]
+    )
+    {
+        movement +=
+            movementForward;
+    }
+
+    if (
+        keyboard[
+            SDL_SCANCODE_DOWN
+        ]
+    )
+    {
+        movement -=
+            movementForward;
+    }
+
+    if (
+        keyboard[
+            SDL_SCANCODE_RIGHT
+        ]
+    )
+    {
+        movement +=
+            movementRight;
+    }
+
+    if (
+        keyboard[
+            SDL_SCANCODE_LEFT
+        ]
+    )
+    {
+        movement -=
+            movementRight;
+    }
+
+    if (
+        glm::dot(
+            movement,
+            movement
+        ) > 0.0001f
+    )
+    {
+        movement =
+            glm::normalize(
+                movement
+            );
+
+        selected->transform.position +=
+            movement *
+            editorMoveSpeed *
+            deltaTime;
+    }
+
+    // =====================================================
+    // Vertical Movement
+    // =====================================================
+
+    if (
+        keyboard[
+            SDL_SCANCODE_PAGEUP
+        ]
+    )
+    {
+        selected->transform.position.y +=
+            editorVerticalSpeed *
+            deltaTime;
+    }
+
+    if (
+        keyboard[
+            SDL_SCANCODE_PAGEDOWN
+        ]
+    )
+    {
+        selected->transform.position.y -=
+            editorVerticalSpeed *
+            deltaTime;
+    }
+
+    // =====================================================
+    // Rotation
+    // =====================================================
+
+    if (
+        keyboard[
+            SDL_SCANCODE_Q
+        ]
+    )
+    {
+        selected->transform.rotation.y -=
+            editorRotationSpeed *
+            deltaTime;
+    }
+
+    if (
+        keyboard[
+            SDL_SCANCODE_E
+        ]
+    )
+    {
+        selected->transform.rotation.y +=
+            editorRotationSpeed *
+            deltaTime;
+    }
+
+    // =====================================================
+    // Uniform Scale
+    //
+    // + can be SHIFT + '=' on normal keyboards.
+    // SDL_SCANCODE_EQUALS therefore covers both.
+    // =====================================================
+
+    bool scaleUp =
+        keyboard[
+            SDL_SCANCODE_EQUALS
+        ];
+
+    bool scaleDown =
+        keyboard[
+            SDL_SCANCODE_MINUS
+        ];
+
+#ifdef SDL_SCANCODE_KP_PLUS
+    scaleUp =
+        scaleUp ||
+        keyboard[
+            SDL_SCANCODE_KP_PLUS
+        ];
+#endif
+
+#ifdef SDL_SCANCODE_KP_MINUS
+    scaleDown =
+        scaleDown ||
+        keyboard[
+            SDL_SCANCODE_KP_MINUS
+        ];
+#endif
+
+    if (
+        scaleUp
+    )
+    {
+        const float factor =
+            1.0f +
+            editorScaleSpeed *
+            deltaTime;
+
+        selected->transform.scale *=
+            factor;
+    }
+
+    if (
+        scaleDown
+    )
+    {
+        const float factor =
+            glm::max(
+                0.01f,
+                1.0f -
+                editorScaleSpeed *
+                deltaTime
+            );
+
+        selected->transform.scale *=
+            factor;
+    }
+
+    selected->transform.scale =
+        glm::max(
+            selected->transform.scale,
+            glm::vec3(
+                0.05f
+            )
+        );
+
+    // Gameplay simulation is intentionally paused in editor mode.
+    // Camera stays where the player left it, so moving an object
+    // does not drag the whole view around.
 }
 
 // =========================================================

@@ -1313,11 +1313,31 @@ void Renderer::DrawEntity(
         sizeof(TransformUniform)
     );
 
+    glm::vec4 renderColor =
+        entity.color;
+
+    if (
+        entity.editorSelected
+    )
+    {
+        renderColor =
+            glm::mix(
+                entity.color,
+                glm::vec4(
+                    1.0f,
+                    0.70f,
+                    0.12f,
+                    1.0f
+                ),
+                0.80f
+            );
+    }
+
     SDL_PushGPUVertexUniformData(
         commandBuffer,
         1,
         glm::value_ptr(
-            entity.color
+            renderColor
         ),
         sizeof(glm::vec4)
     );

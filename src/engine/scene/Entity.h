@@ -11,13 +11,12 @@ using EntityId = std::uint64_t;
 
 struct Entity
 {
-    EntityId id = 0;
+    EntityId id =
+        0;
 
     std::string name =
         "Entity";
 
-    // Пока это только логическое имя prefab.
-    // Позже оно будет ссылаться на настоящий prefab asset.
     std::string prefab =
         "cube";
 
@@ -34,5 +33,10 @@ struct Entity
         true;
 
     bool collidable =
+        false;
+
+    // Runtime-only editor flag.
+    // It is intentionally NOT saved to the scene JSON.
+    bool editorSelected =
         false;
 };
