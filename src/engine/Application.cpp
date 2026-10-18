@@ -18,10 +18,10 @@ namespace
         "assets/worlds/test_world.json";
 
     constexpr const char* GAME_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.19";
+        "RAI: Ashes of Eternity | Engine 0.0.20";
 
     constexpr const char* EDITOR_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.19 | EDITOR MODE";
+        "RAI: Ashes of Eternity | Engine 0.0.20 | EDITOR MODE";
 }
 
 // =========================================================
@@ -72,6 +72,20 @@ bool Application::Initialize()
     {
         SDL_Log(
             "Renderer initialization failed."
+        );
+
+        return false;
+    }
+
+    if (
+        !editorUI.Initialize(
+            window,
+            renderer.GetDevice()
+        )
+    )
+    {
+        SDL_Log(
+            "Editor UI initialization failed."
         );
 
         return false;
@@ -746,6 +760,10 @@ void Application::ProcessEvents()
         )
     )
     {
+        editorUI.ProcessEvent(
+            event
+        );
+
         if (
             event.type ==
             SDL_EVENT_QUIT
@@ -789,6 +807,24 @@ void Application::ProcessEvents()
         {
             ToggleEditorMode();
 
+            continue;
+        }
+
+        // =================================================
+        // ImGui keyboard capture
+        //
+        // F1/F5/F9 above/below remain engine commands, but
+        // editing text/numbers in Inspector must not trigger
+        // editor object hotkeys.
+        // =================================================
+
+        if (
+            editorMode &&
+            editorUI.WantsKeyboardCapture() &&
+            event.key.key != SDLK_F5 &&
+            event.key.key != SDLK_F9
+        )
+        {
             continue;
         }
 
@@ -1202,6 +1238,13 @@ void Application::UpdateEditor(
     float deltaTime
 )
 {
+    if (
+        editorUI.WantsKeyboardCapture()
+    )
+    {
+        return;
+    }
+
     Entity* selected =
         GetSelectedEditorEntity();
 
@@ -1485,10 +1528,31 @@ void Application::Run()
             deltaTime
         );
 
+        ImDrawData* uiDrawData =
+            nullptr;
+
+        if (
+            editorMode
+        )
+        {
+            editorUI.BeginFrame();
+
+            editorUI.Draw(
+                scene,
+                selectedEditorEntityId
+            );
+
+            editorUI.EndFrame();
+
+            uiDrawData =
+                editorUI.GetDrawData();
+        }
+
         if (
             !renderer.Render(
                 scene,
-                camera
+                camera,
+                uiDrawData
             )
         )
         {
@@ -1504,6 +1568,8 @@ void Application::Run()
 
 void Application::Shutdown()
 {
+    editorUI.Shutdown();
+
     renderer.Shutdown();
 
     if (

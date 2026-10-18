@@ -5,6 +5,7 @@
 #include "scene/Scene.h"
 
 #include "game/GameState.h"
+#include "editor/EditorUI.h"
 
 #include <SDL3/SDL.h>
 
@@ -61,6 +62,8 @@ private:
         nullptr;
 
     Renderer renderer;
+
+    EditorUI editorUI;
 
     Scene scene;
 

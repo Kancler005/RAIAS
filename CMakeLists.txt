@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.19
+        VERSION 0.0.20
         LANGUAGES CXX
 )
 
@@ -58,10 +58,51 @@ if(NOT cgltf_POPULATED)
     FetchContent_Populate(cgltf)
 endif()
 
+
+# Dear ImGui 1.93.0
+#
+# Official SDL3 + SDL_GPU backend.
+# We build only the core and the two backends RAI needs.
+
+FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG v1.93.0
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_GetProperties(imgui)
+
+if(NOT imgui_POPULATED)
+    FetchContent_Populate(imgui)
+endif()
+
+add_library(imgui STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp
+)
+
+target_include_directories(imgui
+        PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+)
+
+target_link_libraries(imgui
+        PUBLIC
+        SDL3::SDL3
+)
+
 add_executable(RAI
         src/main.cpp
 
         src/engine/Application.cpp
+
+        src/editor/EditorUI.cpp
         src/engine/Renderer.cpp
 
         src/engine/render/Mesh.cpp
@@ -87,4 +128,5 @@ target_link_libraries(RAI
         SDL3::SDL3
         glm::glm
         nlohmann_json::nlohmann_json
+        imgui
 )

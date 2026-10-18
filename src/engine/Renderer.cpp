@@ -7,6 +7,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <imgui_impl_sdlgpu3.h>
+
 #include <cstddef>
 #include <cstring>
 #include <fstream>
@@ -1366,7 +1368,8 @@ void Renderer::DrawEntity(
 
 bool Renderer::Render(
     const Scene& scene,
-    const Camera& camera
+    const Camera& camera,
+    ImDrawData* uiDrawData
 )
 {
     SDL_GPUCommandBuffer* commandBuffer =
@@ -1875,6 +1878,67 @@ bool Renderer::Render(
     SDL_EndGPUCopyPass(
         historyCopyPass
     );
+
+    // =====================================================
+    // PASS 3
+    // IMGUI EDITOR UI -> SWAPCHAIN
+    // =====================================================
+
+    if (
+        uiDrawData != nullptr &&
+        uiDrawData->DisplaySize.x > 0.0f &&
+        uiDrawData->DisplaySize.y > 0.0f
+    )
+    {
+        // Mandatory for the SDL_GPU ImGui backend:
+        // upload UI vertex/index data before starting its pass.
+        ImGui_ImplSDLGPU3_PrepareDrawData(
+            uiDrawData,
+            commandBuffer
+        );
+
+        SDL_GPUColorTargetInfo
+            uiTarget{};
+
+        uiTarget.texture =
+            swapchain;
+
+        // Preserve the ASCII world already rendered in PASS 2.
+        uiTarget.load_op =
+            SDL_GPU_LOADOP_LOAD;
+
+        uiTarget.store_op =
+            SDL_GPU_STOREOP_STORE;
+
+        SDL_GPURenderPass* uiPass =
+            SDL_BeginGPURenderPass(
+                commandBuffer,
+                &uiTarget,
+                1,
+                nullptr
+            );
+
+        if (
+            uiPass == nullptr
+        )
+        {
+            SDL_CancelGPUCommandBuffer(
+                commandBuffer
+            );
+
+            return false;
+        }
+
+        ImGui_ImplSDLGPU3_RenderDrawData(
+            uiDrawData,
+            commandBuffer,
+            uiPass
+        );
+
+        SDL_EndGPURenderPass(
+            uiPass
+        );
+    }
 
     // =====================================================
     // Submit

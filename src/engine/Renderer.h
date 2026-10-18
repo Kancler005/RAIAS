@@ -12,6 +12,7 @@
 class Camera;
 class Scene;
 struct Entity;
+struct ImDrawData;
 
 class Renderer
 {
@@ -22,8 +23,15 @@ public:
 
     bool Render(
         const Scene& scene,
-        const Camera& camera
+        const Camera& camera,
+        ImDrawData* uiDrawData = nullptr
     );
+
+    [[nodiscard]]
+    SDL_GPUDevice* GetDevice() const
+    {
+        return device;
+    }
 
     void Shutdown();
 
