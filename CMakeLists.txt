@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.15
+        VERSION 0.0.16
         LANGUAGES CXX
 )
 
@@ -10,8 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
-
-# SDL3
 
 FetchContent_Declare(
         SDL3
@@ -26,8 +24,6 @@ set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(SDL3)
 
-# GLM
-
 FetchContent_Declare(
         glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git
@@ -36,8 +32,6 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(glm)
-
-# JSON
 
 FetchContent_Declare(
         nlohmann_json
@@ -48,13 +42,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(nlohmann_json)
 
-# RAI
-
 add_executable(RAI
         src/main.cpp
 
         src/engine/Application.cpp
         src/engine/Renderer.cpp
+
+        src/engine/render/Mesh.cpp
 
         src/engine/scene/Scene.cpp
         src/engine/scene/SceneSerializer.cpp

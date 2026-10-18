@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+#include "render/Mesh.h"
+
 #include <string>
 
 class Camera;
@@ -43,9 +45,6 @@ private:
         Uint32 height
     );
 
-    bool CreateVertexBuffer();
-
-    bool UploadCubeVertices();
 
     bool CreateSampler();
 
@@ -75,8 +74,7 @@ private:
     SDL_GPUGraphicsPipeline* postProcessPipeline =
         nullptr;
 
-    SDL_GPUBuffer* vertexBuffer =
-        nullptr;
+    Mesh cubeMesh;
 
     SDL_GPUTexture* depthTexture =
         nullptr;

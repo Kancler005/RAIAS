@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include "Camera.h"
+#include "render/Mesh.h"
 #include "scene/Scene.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -33,16 +34,6 @@ namespace
     constexpr Uint32 ASCII_ATLAS_HEIGHT =
         ASCII_GLYPH_HEIGHT;
 
-    struct CubeVertex
-    {
-        float px;
-        float py;
-        float pz;
-
-        float nx;
-        float ny;
-        float nz;
-    };
 
     struct alignas(16) TransformUniform
     {
@@ -64,204 +55,6 @@ namespace
         glm::vec4 temporalInfo;
     };
 
-    // =====================================================
-    // Cube
-    // =====================================================
-
-    const CubeVertex cubeVertices[] =
-    {
-        // FRONT
-
-        {
-            -0.5f, -0.5f, -0.5f,
-             0.0f,  0.0f, -1.0f
-        },
-
-        {
-             0.5f, -0.5f, -0.5f,
-             0.0f,  0.0f, -1.0f
-        },
-
-        {
-             0.5f,  0.5f, -0.5f,
-             0.0f,  0.0f, -1.0f
-        },
-
-        {
-            -0.5f, -0.5f, -0.5f,
-             0.0f,  0.0f, -1.0f
-        },
-
-        {
-             0.5f,  0.5f, -0.5f,
-             0.0f,  0.0f, -1.0f
-        },
-
-        {
-            -0.5f,  0.5f, -0.5f,
-             0.0f,  0.0f, -1.0f
-        },
-
-        // BACK
-
-        {
-             0.5f, -0.5f, 0.5f,
-             0.0f,  0.0f, 1.0f
-        },
-
-        {
-            -0.5f, -0.5f, 0.5f,
-             0.0f,  0.0f, 1.0f
-        },
-
-        {
-            -0.5f,  0.5f, 0.5f,
-             0.0f,  0.0f, 1.0f
-        },
-
-        {
-             0.5f, -0.5f, 0.5f,
-             0.0f,  0.0f, 1.0f
-        },
-
-        {
-            -0.5f,  0.5f, 0.5f,
-             0.0f,  0.0f, 1.0f
-        },
-
-        {
-             0.5f,  0.5f, 0.5f,
-             0.0f,  0.0f, 1.0f
-        },
-
-        // LEFT
-
-        {
-            -0.5f, -0.5f,  0.5f,
-            -1.0f,  0.0f,  0.0f
-        },
-
-        {
-            -0.5f, -0.5f, -0.5f,
-            -1.0f,  0.0f,  0.0f
-        },
-
-        {
-            -0.5f,  0.5f, -0.5f,
-            -1.0f,  0.0f,  0.0f
-        },
-
-        {
-            -0.5f, -0.5f,  0.5f,
-            -1.0f,  0.0f,  0.0f
-        },
-
-        {
-            -0.5f,  0.5f, -0.5f,
-            -1.0f,  0.0f,  0.0f
-        },
-
-        {
-            -0.5f,  0.5f,  0.5f,
-            -1.0f,  0.0f,  0.0f
-        },
-
-        // RIGHT
-
-        {
-             0.5f, -0.5f, -0.5f,
-             1.0f,  0.0f,  0.0f
-        },
-
-        {
-             0.5f, -0.5f,  0.5f,
-             1.0f,  0.0f,  0.0f
-        },
-
-        {
-             0.5f,  0.5f,  0.5f,
-             1.0f,  0.0f,  0.0f
-        },
-
-        {
-             0.5f, -0.5f, -0.5f,
-             1.0f,  0.0f,  0.0f
-        },
-
-        {
-             0.5f,  0.5f,  0.5f,
-             1.0f,  0.0f,  0.0f
-        },
-
-        {
-             0.5f,  0.5f, -0.5f,
-             1.0f,  0.0f,  0.0f
-        },
-
-        // TOP
-
-        {
-            -0.5f, 0.5f, -0.5f,
-             0.0f, 1.0f, 0.0f
-        },
-
-        {
-             0.5f, 0.5f, -0.5f,
-             0.0f, 1.0f, 0.0f
-        },
-
-        {
-             0.5f, 0.5f,  0.5f,
-             0.0f, 1.0f, 0.0f
-        },
-
-        {
-            -0.5f, 0.5f, -0.5f,
-             0.0f, 1.0f, 0.0f
-        },
-
-        {
-             0.5f, 0.5f,  0.5f,
-             0.0f, 1.0f, 0.0f
-        },
-
-        {
-            -0.5f, 0.5f,  0.5f,
-             0.0f, 1.0f, 0.0f
-        },
-
-        // BOTTOM
-
-        {
-            -0.5f, -0.5f,  0.5f,
-             0.0f, -1.0f, 0.0f
-        },
-
-        {
-             0.5f, -0.5f,  0.5f,
-             0.0f, -1.0f, 0.0f
-        },
-
-        {
-             0.5f, -0.5f, -0.5f,
-             0.0f, -1.0f, 0.0f
-        },
-
-        {
-            -0.5f, -0.5f,  0.5f,
-             0.0f, -1.0f, 0.0f
-        },
-
-        {
-             0.5f, -0.5f, -0.5f,
-             0.0f, -1.0f, 0.0f
-        },
-
-        {
-            -0.5f, -0.5f, -0.5f,
-             0.0f, -1.0f, 0.0f
-        }
-    };
 
     // =====================================================
     // ASCII glyphs
@@ -570,16 +363,15 @@ bool Renderer::Initialize(
     }
 
     if (
-        !CreateVertexBuffer()
+        !cubeMesh.CreateCube(
+            device
+        )
     )
     {
-        return false;
-    }
+        SDL_Log(
+            "Default cube Mesh creation failed."
+        );
 
-    if (
-        !UploadCubeVertices()
-    )
-    {
         return false;
     }
 
@@ -690,186 +482,6 @@ SDL_GPUShader* Renderer::LoadShader(
     }
 
     return shader;
-}
-
-// =========================================================
-// Vertex Buffer
-// =========================================================
-
-bool Renderer::CreateVertexBuffer()
-{
-    SDL_GPUBufferCreateInfo info{};
-
-    info.usage =
-        SDL_GPU_BUFFERUSAGE_VERTEX;
-
-    info.size =
-        static_cast<Uint32>(
-            sizeof(cubeVertices)
-        );
-
-    vertexBuffer =
-        SDL_CreateGPUBuffer(
-            device,
-            &info
-        );
-
-    if (
-        vertexBuffer == nullptr
-    )
-    {
-        SDL_Log(
-            "Vertex buffer creation failed: %s",
-            SDL_GetError()
-        );
-
-        return false;
-    }
-
-    return true;
-}
-
-// =========================================================
-// Upload Cube
-// =========================================================
-
-bool Renderer::UploadCubeVertices()
-{
-    const Uint32 dataSize =
-        static_cast<Uint32>(
-            sizeof(cubeVertices)
-        );
-
-    SDL_GPUTransferBufferCreateInfo
-        transferInfo{};
-
-    transferInfo.usage =
-        SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-
-    transferInfo.size =
-        dataSize;
-
-    SDL_GPUTransferBuffer* transfer =
-        SDL_CreateGPUTransferBuffer(
-            device,
-            &transferInfo
-        );
-
-    if (
-        transfer == nullptr
-    )
-    {
-        return false;
-    }
-
-    void* mapped =
-        SDL_MapGPUTransferBuffer(
-            device,
-            transfer,
-            false
-        );
-
-    if (
-        mapped == nullptr
-    )
-    {
-        SDL_ReleaseGPUTransferBuffer(
-            device,
-            transfer
-        );
-
-        return false;
-    }
-
-    std::memcpy(
-        mapped,
-        cubeVertices,
-        sizeof(cubeVertices)
-    );
-
-    SDL_UnmapGPUTransferBuffer(
-        device,
-        transfer
-    );
-
-    SDL_GPUCommandBuffer* commandBuffer =
-        SDL_AcquireGPUCommandBuffer(
-            device
-        );
-
-    if (
-        commandBuffer == nullptr
-    )
-    {
-        SDL_ReleaseGPUTransferBuffer(
-            device,
-            transfer
-        );
-
-        return false;
-    }
-
-    SDL_GPUCopyPass* copyPass =
-        SDL_BeginGPUCopyPass(
-            commandBuffer
-        );
-
-    SDL_GPUTransferBufferLocation
-        source{};
-
-    source.transfer_buffer =
-        transfer;
-
-    source.offset =
-        0;
-
-    SDL_GPUBufferRegion
-        destination{};
-
-    destination.buffer =
-        vertexBuffer;
-
-    destination.offset =
-        0;
-
-    destination.size =
-        dataSize;
-
-    SDL_UploadToGPUBuffer(
-        copyPass,
-        &source,
-        &destination,
-        false
-    );
-
-    SDL_EndGPUCopyPass(
-        copyPass
-    );
-
-    if (
-        !SDL_SubmitGPUCommandBuffer(
-            commandBuffer
-        )
-    )
-    {
-        SDL_ReleaseGPUTransferBuffer(
-            device,
-            transfer
-        );
-
-        return false;
-    }
-
-    SDL_WaitForGPUIdle(
-        device
-    );
-
-    SDL_ReleaseGPUTransferBuffer(
-        device,
-        transfer
-    );
-
-    return true;
 }
 
 // =========================================================
@@ -1250,7 +862,7 @@ bool Renderer::CreatePipelines()
         0;
 
     vertexDescription.pitch =
-        sizeof(CubeVertex);
+        sizeof(MeshVertex);
 
     vertexDescription.input_rate =
         SDL_GPU_VERTEXINPUTRATE_VERTEX;
@@ -1271,7 +883,7 @@ bool Renderer::CreatePipelines()
 
     attributes[0].offset =
         offsetof(
-            CubeVertex,
+            MeshVertex,
             px
         );
 
@@ -1286,7 +898,7 @@ bool Renderer::CreatePipelines()
 
     attributes[1].offset =
         offsetof(
-            CubeVertex,
+            MeshVertex,
             nx
         );
 
@@ -1665,12 +1277,8 @@ void Renderer::DrawEntity(
         sizeof(glm::vec4)
     );
 
-    SDL_DrawGPUPrimitives(
-        renderPass,
-        36,
-        1,
-        0,
-        0
+    cubeMesh.Draw(
+        renderPass
     );
 }
 
@@ -1913,21 +1521,6 @@ bool Renderer::Render(
         scenePipeline
     );
 
-    SDL_GPUBufferBinding
-        vertexBinding{};
-
-    vertexBinding.buffer =
-        vertexBuffer;
-
-    vertexBinding.offset =
-        0;
-
-    SDL_BindGPUVertexBuffers(
-        scenePass,
-        0,
-        &vertexBinding,
-        1
-    );
 
     LightUniform light{};
 
@@ -2314,18 +1907,7 @@ void Renderer::Shutdown()
             nullptr;
     }
 
-    if (
-        vertexBuffer != nullptr
-    )
-    {
-        SDL_ReleaseGPUBuffer(
-            device,
-            vertexBuffer
-        );
-
-        vertexBuffer =
-            nullptr;
-    }
+    cubeMesh.Destroy();
 
     if (
         scenePipeline != nullptr
