@@ -5,8 +5,16 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
 
+class Camera;
 class Scene;
 struct ImDrawData;
+
+enum class EditorGizmoOperation
+{
+    Move,
+    Rotate,
+    Scale
+};
 
 class EditorUI
 {
@@ -26,7 +34,8 @@ public:
 
     void Draw(
         Scene& scene,
-        EntityId& selectedEntityId
+        EntityId& selectedEntityId,
+        const Camera& camera
     );
 
     void EndFrame();
@@ -51,6 +60,18 @@ private:
         EntityId selectedEntityId
     );
 
+    void DrawViewport(
+        Scene& scene,
+        EntityId selectedEntityId,
+        const Camera& camera
+    );
+
+    void DrawViewportToolbar(
+        const Entity* selectedEntity
+    );
+
+    void HandleGizmoShortcuts();
+
     static void ApplySelection(
         Scene& scene,
         EntityId selectedEntityId
@@ -70,5 +91,11 @@ private:
         false;
 
     bool frameStarted =
+        false;
+
+    EditorGizmoOperation gizmoOperation =
+        EditorGizmoOperation::Move;
+
+    bool localGizmo =
         false;
 };

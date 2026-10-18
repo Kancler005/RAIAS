@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.20
+        VERSION 0.0.21
         LANGUAGES CXX
 )
 
@@ -10,6 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
+
+# Keep the existing manual FetchContent population flow compatible with CMake 4.x.
+if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()
 
 FetchContent_Declare(
         SDL3
@@ -97,6 +102,40 @@ target_link_libraries(imgui
         SDL3::SDL3
 )
 
+
+# ImGuizmo
+#
+# Current upstream is used because it tracks modern Dear ImGui.
+# Only the core transform gizmo source is compiled.
+
+FetchContent_Declare(
+        imguizmo
+        GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+)
+
+FetchContent_GetProperties(imguizmo)
+
+if(NOT imguizmo_POPULATED)
+    FetchContent_Populate(imguizmo)
+endif()
+
+add_library(imguizmo STATIC
+        ${imguizmo_SOURCE_DIR}/src/ImGuizmo.cpp
+)
+
+target_include_directories(imguizmo
+        PUBLIC
+        ${imguizmo_SOURCE_DIR}/src
+        ${imgui_SOURCE_DIR}
+)
+
+target_link_libraries(imguizmo
+        PUBLIC
+        imgui
+)
+
 add_executable(RAI
         src/main.cpp
 
@@ -129,4 +168,5 @@ target_link_libraries(RAI
         glm::glm
         nlohmann_json::nlohmann_json
         imgui
+        imguizmo
 )

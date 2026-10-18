@@ -18,10 +18,10 @@ namespace
         "assets/worlds/test_world.json";
 
     constexpr const char* GAME_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.20";
+        "RAI: Ashes of Eternity | Engine 0.0.21";
 
     constexpr const char* EDITOR_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.20 | EDITOR MODE";
+        "RAI: Ashes of Eternity | Engine 0.0.21 | EDITOR MODE";
 }
 
 // =========================================================
@@ -694,7 +694,7 @@ void Application::ToggleEditorMode()
         );
 
         SDL_Log(
-            "Q / E = rotate Y"
+            "W / E / R = Move / Rotate / Scale gizmo"
         );
 
         SDL_Log(
@@ -1392,29 +1392,10 @@ void Application::UpdateEditor(
 
     // =====================================================
     // Rotation
+    //
+    // W / E / R are now reserved for transform gizmos.
+    // Rotation is performed through the gizmo or Inspector.
     // =====================================================
-
-    if (
-        keyboard[
-            SDL_SCANCODE_Q
-        ]
-    )
-    {
-        selected->transform.rotation.y -=
-            editorRotationSpeed *
-            deltaTime;
-    }
-
-    if (
-        keyboard[
-            SDL_SCANCODE_E
-        ]
-    )
-    {
-        selected->transform.rotation.y +=
-            editorRotationSpeed *
-            deltaTime;
-    }
 
     // =====================================================
     // Uniform Scale
@@ -1539,7 +1520,8 @@ void Application::Run()
 
             editorUI.Draw(
                 scene,
-                selectedEditorEntityId
+                selectedEditorEntityId,
+                camera
             );
 
             editorUI.EndFrame();

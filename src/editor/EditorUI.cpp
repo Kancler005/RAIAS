@@ -1,15 +1,37 @@
 #include "EditorUI.h"
 
+#include "engine/Camera.h"
 #include "engine/scene/Scene.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlgpu3.h>
 
+#include <ImGuizmo.h>
+
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
 #include <cstdio>
+
+// =========================================================
+// Constants
+// =========================================================
+
+namespace
+{
+    constexpr float HIERARCHY_WIDTH =
+        285.0f;
+
+    constexpr float INSPECTOR_WIDTH =
+        360.0f;
+
+    constexpr float VIEWPORT_TOOLBAR_MARGIN =
+        12.0f;
+}
 
 // =========================================================
 // Initialize
@@ -243,6 +265,9 @@ void EditorUI::BeginFrame()
 
     ImGui::NewFrame();
 
+    // ImGuizmo expects this once for every ImGui frame.
+    ImGuizmo::BeginFrame();
+
     drawData =
         nullptr;
 
@@ -310,7 +335,8 @@ bool EditorUI::WantsMouseCapture() const
 
 void EditorUI::Draw(
     Scene& scene,
-    EntityId& selectedEntityId
+    EntityId& selectedEntityId,
+    const Camera& camera
 )
 {
     if (
@@ -326,6 +352,8 @@ void EditorUI::Draw(
         selectedEntityId
     );
 
+    HandleGizmoShortcuts();
+
     DrawHierarchy(
         scene,
         selectedEntityId
@@ -334,6 +362,12 @@ void EditorUI::Draw(
     DrawInspector(
         scene,
         selectedEntityId
+    );
+
+    DrawViewport(
+        scene,
+        selectedEntityId,
+        camera
     );
 }
 
@@ -349,9 +383,6 @@ void EditorUI::DrawHierarchy(
     ImGuiViewport* viewport =
         ImGui::GetMainViewport();
 
-    const float panelWidth =
-        285.0f;
-
     ImGui::SetNextWindowPos(
         viewport->WorkPos,
         ImGuiCond_Always
@@ -359,7 +390,7 @@ void EditorUI::DrawHierarchy(
 
     ImGui::SetNextWindowSize(
         ImVec2(
-            panelWidth,
+            HIERARCHY_WIDTH,
             viewport->WorkSize.y
         ),
         ImGuiCond_Always
@@ -464,14 +495,11 @@ void EditorUI::DrawInspector(
     ImGuiViewport* viewport =
         ImGui::GetMainViewport();
 
-    const float panelWidth =
-        360.0f;
-
     ImGui::SetNextWindowPos(
         ImVec2(
             viewport->WorkPos.x +
                 viewport->WorkSize.x -
-                panelWidth,
+                INSPECTOR_WIDTH,
             viewport->WorkPos.y
         ),
         ImGuiCond_Always
@@ -479,7 +507,7 @@ void EditorUI::DrawInspector(
 
     ImGui::SetNextWindowSize(
         ImVec2(
-            panelWidth,
+            INSPECTOR_WIDTH,
             viewport->WorkSize.y
         ),
         ImGuiCond_Always
@@ -616,14 +644,507 @@ void EditorUI::DrawInspector(
     ImGui::Separator();
 
     ImGui::TextDisabled(
-        "Changes are written to the Scene immediately."
+        "W Move | E Rotate | R Scale"
     );
 
     ImGui::TextDisabled(
-        "Press F5 to save them to JSON."
+        "Changes are live. F5 saves Scene JSON."
     );
 
     ImGui::End();
+}
+
+// =========================================================
+// Gizmo Shortcuts
+// =========================================================
+
+void EditorUI::HandleGizmoShortcuts()
+{
+    ImGuiIO& io =
+        ImGui::GetIO();
+
+    // Do not steal letters while typing a Name or editing a widget.
+    if (
+        io.WantTextInput ||
+        ImGui::IsAnyItemActive()
+    )
+    {
+        return;
+    }
+
+    if (
+        ImGui::IsKeyPressed(
+            ImGuiKey_W,
+            false
+        )
+    )
+    {
+        gizmoOperation =
+            EditorGizmoOperation::Move;
+    }
+
+    if (
+        ImGui::IsKeyPressed(
+            ImGuiKey_E,
+            false
+        )
+    )
+    {
+        gizmoOperation =
+            EditorGizmoOperation::Rotate;
+    }
+
+    if (
+        ImGui::IsKeyPressed(
+            ImGuiKey_R,
+            false
+        )
+    )
+    {
+        gizmoOperation =
+            EditorGizmoOperation::Scale;
+    }
+}
+
+// =========================================================
+// Viewport Toolbar
+// =========================================================
+
+void EditorUI::DrawViewportToolbar(
+    const Entity* selectedEntity
+)
+{
+    ImGuiViewport* viewport =
+        ImGui::GetMainViewport();
+
+    const float left =
+        viewport->WorkPos.x +
+        HIERARCHY_WIDTH +
+        VIEWPORT_TOOLBAR_MARGIN;
+
+    const float top =
+        viewport->WorkPos.y +
+        VIEWPORT_TOOLBAR_MARGIN;
+
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            left,
+            top
+        ),
+        ImGuiCond_Always
+    );
+
+    constexpr ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings;
+
+    ImGui::Begin(
+        "##ViewportToolbar",
+        nullptr,
+        flags
+    );
+
+    const bool moveSelected =
+        gizmoOperation ==
+        EditorGizmoOperation::Move;
+
+    const bool rotateSelected =
+        gizmoOperation ==
+        EditorGizmoOperation::Rotate;
+
+    const bool scaleSelected =
+        gizmoOperation ==
+        EditorGizmoOperation::Scale;
+
+    if (
+        moveSelected
+    )
+    {
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(
+                0.55f,
+                0.34f,
+                0.10f,
+                1.0f
+            )
+        );
+    }
+
+    if (
+        ImGui::Button(
+            "W  Move"
+        )
+    )
+    {
+        gizmoOperation =
+            EditorGizmoOperation::Move;
+    }
+
+    if (
+        moveSelected
+    )
+    {
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::SameLine();
+
+    if (
+        rotateSelected
+    )
+    {
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(
+                0.55f,
+                0.34f,
+                0.10f,
+                1.0f
+            )
+        );
+    }
+
+    if (
+        ImGui::Button(
+            "E  Rotate"
+        )
+    )
+    {
+        gizmoOperation =
+            EditorGizmoOperation::Rotate;
+    }
+
+    if (
+        rotateSelected
+    )
+    {
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::SameLine();
+
+    if (
+        scaleSelected
+    )
+    {
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(
+                0.55f,
+                0.34f,
+                0.10f,
+                1.0f
+            )
+        );
+    }
+
+    if (
+        ImGui::Button(
+            "R  Scale"
+        )
+    )
+    {
+        gizmoOperation =
+            EditorGizmoOperation::Scale;
+    }
+
+    if (
+        scaleSelected
+    )
+    {
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::SameLine();
+
+    if (
+        ImGui::Button(
+            localGizmo
+                ? "Local"
+                : "World"
+        )
+    )
+    {
+        localGizmo =
+            !localGizmo;
+    }
+
+    if (
+        selectedEntity != nullptr
+    )
+    {
+        ImGui::SameLine();
+
+        ImGui::TextDisabled(
+            "| %s",
+            selectedEntity->name.c_str()
+        );
+    }
+
+    ImGui::End();
+}
+
+// =========================================================
+// Viewport + Transform Gizmo
+// =========================================================
+
+void EditorUI::DrawViewport(
+    Scene& scene,
+    EntityId selectedEntityId,
+    const Camera& camera
+)
+{
+    ImGuiViewport* viewport =
+        ImGui::GetMainViewport();
+
+    Entity* entity =
+        scene.FindEntityById(
+            selectedEntityId
+        );
+
+    DrawViewportToolbar(
+        entity
+    );
+
+    // =====================================================
+    // Visible central editor viewport border.
+    //
+    // The game still renders the world to the whole swapchain.
+    // Side panels cover the outer areas. This milestone makes
+    // the central editing region explicit without duplicating
+    // the world renderer.
+    // =====================================================
+
+    const float viewportLeft =
+        viewport->WorkPos.x +
+        HIERARCHY_WIDTH;
+
+    const float viewportRight =
+        viewport->WorkPos.x +
+        viewport->WorkSize.x -
+        INSPECTOR_WIDTH;
+
+    const float viewportTop =
+        viewport->WorkPos.y;
+
+    const float viewportBottom =
+        viewport->WorkPos.y +
+        viewport->WorkSize.y;
+
+    ImDrawList* foreground =
+        ImGui::GetForegroundDrawList();
+
+    foreground->AddRect(
+        ImVec2(
+            viewportLeft,
+            viewportTop
+        ),
+        ImVec2(
+            viewportRight,
+            viewportBottom
+        ),
+        IM_COL32(
+            95,
+            95,
+            105,
+            255
+        ),
+        0.0f,
+        0,
+        1.0f
+    );
+
+    if (
+        entity == nullptr
+    )
+    {
+        return;
+    }
+
+    // =====================================================
+    // Camera matrices
+    //
+    // Renderer uses full-window aspect, so the gizmo must use
+    // the same projection to line up with the actual world.
+    // =====================================================
+
+    const float fullAspect =
+        viewport->WorkSize.x /
+        glm::max(
+            viewport->WorkSize.y,
+            1.0f
+        );
+
+    const glm::vec3 cameraPosition =
+        camera.target +
+        camera.offset;
+
+    const glm::mat4 view =
+        glm::lookAtLH(
+            cameraPosition,
+            camera.target,
+            glm::vec3(
+                0.0f,
+                1.0f,
+                0.0f
+            )
+        );
+
+    const float halfWidth =
+        camera.halfHeight *
+        fullAspect;
+
+    const glm::mat4 projection =
+        glm::orthoLH_ZO(
+            -halfWidth,
+             halfWidth,
+            -camera.halfHeight,
+             camera.halfHeight,
+             0.1f,
+             100.0f
+        );
+
+    glm::mat4 model =
+        entity->transform.GetMatrix();
+
+    // =====================================================
+    // ImGuizmo
+    // =====================================================
+
+    ImGuizmo::SetDrawlist(
+        foreground
+    );
+
+    ImGuizmo::SetOrthographic(
+        true
+    );
+
+    // Use the full rendered area for coordinate mapping.
+    // The left/right editor panels simply cover the outer world.
+    ImGuizmo::SetRect(
+        viewport->WorkPos.x,
+        viewport->WorkPos.y,
+        viewport->WorkSize.x,
+        viewport->WorkSize.y
+    );
+
+    ImGuizmo::OPERATION operation =
+        ImGuizmo::TRANSLATE;
+
+    switch (
+        gizmoOperation
+    )
+    {
+        case EditorGizmoOperation::Move:
+        {
+            operation =
+                ImGuizmo::TRANSLATE;
+
+            break;
+        }
+
+        case EditorGizmoOperation::Rotate:
+        {
+            operation =
+                ImGuizmo::ROTATE;
+
+            break;
+        }
+
+        case EditorGizmoOperation::Scale:
+        {
+            operation =
+                ImGuizmo::SCALE;
+
+            break;
+        }
+    }
+
+    const ImGuizmo::MODE mode =
+        localGizmo
+            ? ImGuizmo::LOCAL
+            : ImGuizmo::WORLD;
+
+    const bool changed =
+        ImGuizmo::Manipulate(
+            glm::value_ptr(
+                view
+            ),
+            glm::value_ptr(
+                projection
+            ),
+            operation,
+            mode,
+            glm::value_ptr(
+                model
+            )
+        );
+
+    if (
+        !changed
+    )
+    {
+        return;
+    }
+
+    float translation[3] =
+    {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    float rotation[3] =
+    {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    float scale[3] =
+    {
+        1.0f,
+        1.0f,
+        1.0f
+    };
+
+    ImGuizmo::DecomposeMatrixToComponents(
+        glm::value_ptr(
+            model
+        ),
+        translation,
+        rotation,
+        scale
+    );
+
+    entity->transform.position =
+    {
+        translation[0],
+        translation[1],
+        translation[2]
+    };
+
+    entity->transform.rotation =
+    {
+        rotation[0],
+        rotation[1],
+        rotation[2]
+    };
+
+    entity->transform.scale =
+        glm::max(
+            glm::vec3(
+                scale[0],
+                scale[1],
+                scale[2]
+            ),
+            glm::vec3(
+                0.05f
+            )
+        );
 }
 
 // =========================================================
