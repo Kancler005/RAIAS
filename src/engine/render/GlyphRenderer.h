@@ -27,6 +27,13 @@ struct GlyphVertex
     float a;
 };
 
+enum class GlyphMaterialKind : Uint8
+{
+    AshSoil,
+    DeadGrass,
+    Stone
+};
+
 class GlyphRenderer
 {
 public:
@@ -37,7 +44,12 @@ public:
         SDL_GPUSampler* glyphSampler
     );
 
-    bool CreateGroundGrid(
+    // Generates the first RAI world-material field.
+    //
+    // Unlike 0.0.22's uniform random grid, this uses low-frequency
+    // deterministic noise to form coherent patches of ash, dead grass,
+    // stone and empty negative space.
+    bool CreateDarkFantasyGround(
         float minX,
         float maxX,
         float minZ,
@@ -79,13 +91,33 @@ private:
         const std::vector<GlyphVertex>& vertices
     );
 
+    void AppendMaterialGlyph(
+        std::vector<GlyphVertex>& vertices,
+        GlyphMaterialKind material,
+        const glm::vec3& center,
+        Uint32 hash,
+        float materialStrength
+    );
+
     static Uint32 HashGrid(
         int x,
-        int z
+        int z,
+        Uint32 seed = 0u
     );
 
     static float Hash01(
         Uint32 value
+    );
+
+    static float SmoothStep(
+        float value
+    );
+
+    static float ValueNoise(
+        float x,
+        float z,
+        float frequency,
+        Uint32 seed
     );
 
 private:
@@ -108,5 +140,14 @@ private:
         0;
 
     Uint32 glyphCount =
+        0;
+
+    Uint32 ashGlyphCount =
+        0;
+
+    Uint32 grassGlyphCount =
+        0;
+
+    Uint32 stoneGlyphCount =
         0;
 };

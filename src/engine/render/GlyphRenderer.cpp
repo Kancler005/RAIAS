@@ -2,6 +2,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <fstream>
@@ -172,7 +174,6 @@ namespace
             color.a
         };
 
-        // Triangle 1
         vertices.push_back(
             topLeft
         );
@@ -185,7 +186,6 @@ namespace
             bottomRight
         );
 
-        // Triangle 2
         vertices.push_back(
             topLeft
         );
@@ -607,12 +607,13 @@ bool GlyphRenderer::CreatePipeline(
 }
 
 // ============================================================
-// Deterministic Hash
+// Hash / Noise
 // ============================================================
 
 Uint32 GlyphRenderer::HashGrid(
     int x,
-    int z
+    int z,
+    Uint32 seed
 )
 {
     Uint32 value =
@@ -621,7 +622,8 @@ Uint32 GlyphRenderer::HashGrid(
         ) ^
         static_cast<Uint32>(
             z * 668265263
-        );
+        ) ^
+        seed;
 
     value =
         (
@@ -655,11 +657,456 @@ float GlyphRenderer::Hash01(
         );
 }
 
+float GlyphRenderer::SmoothStep(
+    float value
+)
+{
+    value =
+        std::clamp(
+            value,
+            0.0f,
+            1.0f
+        );
+
+    return
+        value *
+        value *
+        (
+            3.0f -
+            2.0f *
+            value
+        );
+}
+
+float GlyphRenderer::ValueNoise(
+    float x,
+    float z,
+    float frequency,
+    Uint32 seed
+)
+{
+    const float sampleX =
+        x *
+        frequency;
+
+    const float sampleZ =
+        z *
+        frequency;
+
+    const int x0 =
+        static_cast<int>(
+            std::floor(
+                sampleX
+            )
+        );
+
+    const int z0 =
+        static_cast<int>(
+            std::floor(
+                sampleZ
+            )
+        );
+
+    const int x1 =
+        x0 + 1;
+
+    const int z1 =
+        z0 + 1;
+
+    const float tx =
+        SmoothStep(
+            sampleX -
+            static_cast<float>(
+                x0
+            )
+        );
+
+    const float tz =
+        SmoothStep(
+            sampleZ -
+            static_cast<float>(
+                z0
+            )
+        );
+
+    const float v00 =
+        Hash01(
+            HashGrid(
+                x0,
+                z0,
+                seed
+            )
+        );
+
+    const float v10 =
+        Hash01(
+            HashGrid(
+                x1,
+                z0,
+                seed
+            )
+        );
+
+    const float v01 =
+        Hash01(
+            HashGrid(
+                x0,
+                z1,
+                seed
+            )
+        );
+
+    const float v11 =
+        Hash01(
+            HashGrid(
+                x1,
+                z1,
+                seed
+            )
+        );
+
+    const float a =
+        v00 +
+        (
+            v10 -
+            v00
+        ) *
+        tx;
+
+    const float b =
+        v01 +
+        (
+            v11 -
+            v01
+        ) *
+        tx;
+
+    return
+        a +
+        (
+            b -
+            a
+        ) *
+        tz;
+}
+
 // ============================================================
-// Ground Grid
+// Material Glyph
 // ============================================================
 
-bool GlyphRenderer::CreateGroundGrid(
+void GlyphRenderer::AppendMaterialGlyph(
+    std::vector<GlyphVertex>& vertices,
+    GlyphMaterialKind material,
+    const glm::vec3& center,
+    Uint32 hash,
+    float materialStrength
+)
+{
+    float glyph =
+        1.0f;
+
+    float size =
+        1.0f;
+
+    glm::vec4 color
+    {
+        0.22f,
+        0.22f,
+        0.20f,
+        1.0f
+    };
+
+    const float variationA =
+        Hash01(
+            hash ^
+            0xA51E3B27u
+        );
+
+    const float variationB =
+        Hash01(
+            hash ^
+            0xD73184C9u
+        );
+
+    const float variationC =
+        Hash01(
+            hash ^
+            0x379B12EFu
+        );
+
+    switch (
+        material
+    )
+    {
+        case GlyphMaterialKind::AshSoil:
+        {
+            // . : - with rare +
+            const Uint32 choice =
+                (
+                    hash >>
+                    8
+                ) %
+                10u;
+
+            if (
+                choice < 4u
+            )
+            {
+                glyph =
+                    1.0f;
+            }
+            else if (
+                choice < 7u
+            )
+            {
+                glyph =
+                    2.0f;
+            }
+            else if (
+                choice < 9u
+            )
+            {
+                glyph =
+                    3.0f;
+            }
+            else
+            {
+                glyph =
+                    4.0f;
+            }
+
+            const glm::vec3 coldAsh
+            {
+                0.25f,
+                0.25f,
+                0.24f
+            };
+
+            const glm::vec3 dirtyBrown
+            {
+                0.29f,
+                0.24f,
+                0.18f
+            };
+
+            const glm::vec3 mixed =
+                coldAsh +
+                (
+                    dirtyBrown -
+                    coldAsh
+                ) *
+                variationA;
+
+            color =
+            {
+                mixed.r,
+                mixed.g,
+                mixed.b,
+                1.0f
+            };
+
+            size =
+                0.68f +
+                variationB *
+                0.44f;
+
+            ++ashGlyphCount;
+
+            break;
+        }
+
+        case GlyphMaterialKind::DeadGrass:
+        {
+            // ":" "-" "+" "*" gives thin-to-dense tufts with
+            // our current 8-glyph atlas.
+            const Uint32 choice =
+                (
+                    hash >>
+                    10
+                ) %
+                10u;
+
+            if (
+                choice < 2u
+            )
+            {
+                glyph =
+                    2.0f;
+            }
+            else if (
+                choice < 5u
+            )
+            {
+                glyph =
+                    3.0f;
+            }
+            else if (
+                choice < 9u
+            )
+            {
+                glyph =
+                    4.0f;
+            }
+            else
+            {
+                glyph =
+                    5.0f;
+            }
+
+            const glm::vec3 deadOlive
+            {
+                0.25f,
+                0.29f,
+                0.16f
+            };
+
+            const glm::vec3 dryGold
+            {
+                0.42f,
+                0.34f,
+                0.16f
+            };
+
+            const glm::vec3 mixed =
+                deadOlive +
+                (
+                    dryGold -
+                    deadOlive
+                ) *
+                variationA;
+
+            color =
+            {
+                mixed.r,
+                mixed.g,
+                mixed.b,
+                1.0f
+            };
+
+            size =
+                0.92f +
+                variationB *
+                0.52f +
+                materialStrength *
+                0.16f;
+
+            ++grassGlyphCount;
+
+            break;
+        }
+
+        case GlyphMaterialKind::Stone:
+        {
+            // Dense symbols only in small rocky clusters.
+            const Uint32 choice =
+                (
+                    hash >>
+                    12
+                ) %
+                8u;
+
+            if (
+                choice < 2u
+            )
+            {
+                glyph =
+                    3.0f;
+            }
+            else if (
+                choice < 5u
+            )
+            {
+                glyph =
+                    4.0f;
+            }
+            else if (
+                choice < 7u
+            )
+            {
+                glyph =
+                    5.0f;
+            }
+            else
+            {
+                glyph =
+                    6.0f;
+            }
+
+            const glm::vec3 charcoal
+            {
+                0.27f,
+                0.28f,
+                0.29f
+            };
+
+            const glm::vec3 paleStone
+            {
+                0.43f,
+                0.42f,
+                0.38f
+            };
+
+            const glm::vec3 mixed =
+                charcoal +
+                (
+                    paleStone -
+                    charcoal
+                ) *
+                variationA;
+
+            color =
+            {
+                mixed.r,
+                mixed.g,
+                mixed.b,
+                1.0f
+            };
+
+            size =
+                0.78f +
+                variationB *
+                0.62f;
+
+            ++stoneGlyphCount;
+
+            break;
+        }
+    }
+
+    // Keep the world dark. Strong material pockets become more visible,
+    // while weaker transitions remain subtle.
+    const float brightness =
+        0.70f +
+        variationC *
+        0.26f +
+        materialStrength *
+        0.18f;
+
+    color.r *=
+        brightness;
+
+    color.g *=
+        brightness;
+
+    color.b *=
+        brightness;
+
+    AppendGlyphQuad(
+        vertices,
+        center,
+        glyph,
+        size,
+        color
+    );
+
+    ++glyphCount;
+}
+
+// ============================================================
+// Dark Fantasy Ground
+// ============================================================
+
+bool GlyphRenderer::CreateDarkFantasyGround(
     float minX,
     float maxX,
     float minZ,
@@ -679,6 +1126,15 @@ bool GlyphRenderer::CreateGroundGrid(
         vertices;
 
     glyphCount =
+        0;
+
+    ashGlyphCount =
+        0;
+
+    grassGlyphCount =
+        0;
+
+    stoneGlyphCount =
         0;
 
     int gridZ =
@@ -701,153 +1157,306 @@ bool GlyphRenderer::CreateGroundGrid(
             ++gridX
         )
         {
-            const Uint32 hash =
+            const Uint32 cellHash =
                 HashGrid(
                     gridX,
-                    gridZ
+                    gridZ,
+                    0x11A7B5C3u
                 );
 
-            const float density =
+            const float detail =
                 Hash01(
-                    hash
+                    cellHash
                 );
 
-            // Keep negative space.
-            // This is the first step away from the "ASCII filter"
-            // look where every screen cell contains a character.
+            // =================================================
+            // Low-frequency material fields.
+            //
+            // Two frequencies are mixed so patches do not look
+            // like smooth circular "blobs".
+            // =================================================
+
+            const float broadA =
+                ValueNoise(
+                    x,
+                    z,
+                    0.34f,
+                    0x4B91D23Fu
+                );
+
+            const float broadB =
+                ValueNoise(
+                    x + 12.7f,
+                    z - 8.3f,
+                    0.61f,
+                    0xA13C7E59u
+                );
+
+            const float materialField =
+                broadA *
+                0.68f +
+                broadB *
+                0.32f;
+
+            const float stoneField =
+                ValueNoise(
+                    x - 19.0f,
+                    z + 31.0f,
+                    0.48f,
+                    0xC03F5A71u
+                );
+
+            const float emptyField =
+                ValueNoise(
+                    x + 4.0f,
+                    z + 17.0f,
+                    0.29f,
+                    0x72D98B45u
+                );
+
+            // =================================================
+            // Negative space
+            //
+            // The world should breathe. Some coherent patches have
+            // no glyphs at all instead of filling every grid cell.
+            // =================================================
+
+            float density =
+                0.58f;
+
             if (
-                density <
-                0.32f
+                materialField >
+                0.57f
+            )
+            {
+                density +=
+                    0.17f;
+            }
+
+            if (
+                stoneField >
+                0.69f
+            )
+            {
+                density +=
+                    0.08f;
+            }
+
+            if (
+                emptyField <
+                0.35f
+            )
+            {
+                density -=
+                    0.26f;
+            }
+
+            density =
+                std::clamp(
+                    density,
+                    0.18f,
+                    0.90f
+                );
+
+            if (
+                detail >
+                density
             )
             {
                 continue;
             }
 
+            // =================================================
+            // Material selection
+            // =================================================
+
+            GlyphMaterialKind material =
+                GlyphMaterialKind::AshSoil;
+
+            float materialStrength =
+                0.30f;
+
+            if (
+                stoneField >
+                0.73f
+            )
+            {
+                material =
+                    GlyphMaterialKind::Stone;
+
+                materialStrength =
+                    std::clamp(
+                        (
+                            stoneField -
+                            0.73f
+                        ) /
+                        0.27f,
+                        0.0f,
+                        1.0f
+                    );
+            }
+            else if (
+                materialField >
+                0.55f
+            )
+            {
+                material =
+                    GlyphMaterialKind::DeadGrass;
+
+                materialStrength =
+                    std::clamp(
+                        (
+                            materialField -
+                            0.55f
+                        ) /
+                        0.45f,
+                        0.0f,
+                        1.0f
+                    );
+            }
+            else
+            {
+                materialStrength =
+                    1.0f -
+                    materialField;
+            }
+
+            // =================================================
+            // Position jitter
+            // =================================================
+
             const float jitterX =
                 (
                     Hash01(
-                        hash ^
+                        cellHash ^
                         0xA53A9E17u
                     ) -
                     0.5f
                 ) *
                 spacing *
-                0.30f;
+                0.56f;
 
             const float jitterZ =
                 (
                     Hash01(
-                        hash ^
+                        cellHash ^
                         0x8D12F4A1u
                     ) -
                     0.5f
                 ) *
                 spacing *
-                0.30f;
+                0.56f;
 
-            const float size =
-                0.72f +
-                Hash01(
-                    hash ^
-                    0x46B8C2D3u
-                ) *
-                0.48f;
+            float heightOffset =
+                0.0f;
 
-            // Use the lighter half of our existing atlas:
-            // . : - + *
-            const float glyph =
-                1.0f +
-                static_cast<float>(
-                    (
-                        hash >>
-                        8
-                    ) %
-                    5u
-                );
-
-            const float colorNoise =
-                Hash01(
-                    hash ^
-                    0xD341A77Bu
-                );
-
-            glm::vec4 color;
-
-            if (
-                colorNoise <
-                0.33f
+            switch (
+                material
             )
             {
-                color =
+                case GlyphMaterialKind::AshSoil:
                 {
-                    0.24f,
-                    0.24f,
-                    0.20f,
-                    1.0f
-                };
-            }
-            else if (
-                colorNoise <
-                0.66f
-            )
-            {
-                color =
+                    heightOffset =
+                        0.005f;
+
+                    break;
+                }
+
+                case GlyphMaterialKind::DeadGrass:
                 {
-                    0.18f,
-                    0.22f,
-                    0.17f,
-                    1.0f
-                };
-            }
-            else
-            {
-                color =
+                    heightOffset =
+                        0.018f +
+                        materialStrength *
+                        0.010f;
+
+                    break;
+                }
+
+                case GlyphMaterialKind::Stone:
                 {
-                    0.28f,
-                    0.23f,
-                    0.17f,
-                    1.0f
-                };
+                    heightOffset =
+                        0.010f;
+
+                    break;
+                }
             }
-
-            // A little deterministic brightness variation.
-            const float brightness =
-                0.72f +
-                Hash01(
-                    hash ^
-                    0x1B56C4E9u
-                ) *
-                0.48f;
-
-            color.r *=
-                brightness;
-
-            color.g *=
-                brightness;
-
-            color.b *=
-                brightness;
 
             const glm::vec3 center
             {
                 x +
                     jitterX,
 
-                worldY,
+                worldY +
+                    heightOffset,
 
                 z +
                     jitterZ
             };
 
-            AppendGlyphQuad(
+            AppendMaterialGlyph(
                 vertices,
+                material,
                 center,
-                glyph,
-                size,
-                color
+                cellHash,
+                materialStrength
             );
 
-            ++glyphCount;
+            // =================================================
+            // Rare second grass tuft
+            //
+            // This makes grassy zones feel clustered without
+            // increasing the base grid density everywhere.
+            // =================================================
+
+            if (
+                material ==
+                    GlyphMaterialKind::DeadGrass &&
+                materialStrength >
+                    0.38f &&
+                Hash01(
+                    cellHash ^
+                    0xF08763B1u
+                ) <
+                    0.23f
+            )
+            {
+                const glm::vec3 secondCenter
+                {
+                    center.x +
+                        (
+                            Hash01(
+                                cellHash ^
+                                0x33D17A5Bu
+                            ) -
+                            0.5f
+                        ) *
+                        spacing *
+                        0.58f,
+
+                    center.y +
+                        0.006f,
+
+                    center.z +
+                        (
+                            Hash01(
+                                cellHash ^
+                                0x67AF0C19u
+                            ) -
+                            0.5f
+                        ) *
+                        spacing *
+                        0.58f
+                };
+
+                AppendMaterialGlyph(
+                    vertices,
+                    GlyphMaterialKind::DeadGrass,
+                    secondCenter,
+                    cellHash ^
+                        0x913A6F2Du,
+                    materialStrength
+                );
+            }
         }
     }
 
@@ -860,13 +1469,24 @@ bool GlyphRenderer::CreateGroundGrid(
         glyphCount =
             0;
 
+        ashGlyphCount =
+            0;
+
+        grassGlyphCount =
+            0;
+
+        stoneGlyphCount =
+            0;
+
         return false;
     }
 
     SDL_Log(
-        "World Glyph Grid created | glyphs=%u vertices=%u",
+        "RAI Glyph Materials generated | total=%u ash=%u grass=%u stone=%u",
         glyphCount,
-        vertexCount
+        ashGlyphCount,
+        grassGlyphCount,
+        stoneGlyphCount
     );
 
     return true;
@@ -1224,7 +1844,6 @@ bool GlyphRenderer::Render(
             0.0f
         );
 
-    // Small world-space billboards.
     cameraData.glyphSettings =
     {
         0.18f,
@@ -1329,6 +1948,15 @@ void GlyphRenderer::Shutdown()
         0;
 
     glyphCount =
+        0;
+
+    ashGlyphCount =
+        0;
+
+    grassGlyphCount =
+        0;
+
+    stoneGlyphCount =
         0;
 
     glyphAtlas =

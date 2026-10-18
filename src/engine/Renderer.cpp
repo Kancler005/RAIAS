@@ -470,18 +470,18 @@ bool Renderer::Initialize(
     }
 
     if (
-        !glyphRenderer.CreateGroundGrid(
+        !glyphRenderer.CreateDarkFantasyGround(
             -4.35f,
              4.35f,
             -4.35f,
              4.35f,
-             0.34f,
+             0.28f,
             -0.46f
         )
     )
     {
         SDL_Log(
-            "World Glyph Grid creation failed."
+            "Dark Fantasy Glyph Ground creation failed."
         );
 
         return false;
