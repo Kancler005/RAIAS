@@ -4,11 +4,22 @@
 
 #include <glm/glm.hpp>
 
+#include <cstdint>
 #include <string>
+
+using EntityId = std::uint64_t;
 
 struct Entity
 {
-    std::string name = "Entity";
+    EntityId id = 0;
+
+    std::string name =
+        "Entity";
+
+    // Пока это только логическое имя prefab.
+    // Позже оно будет ссылаться на настоящий prefab asset.
+    std::string prefab =
+        "cube";
 
     Transform transform{};
 
@@ -19,7 +30,9 @@ struct Entity
         1.0f
     };
 
-    bool visible = true;
+    bool visible =
+        true;
 
-    bool collidable = false;
+    bool collidable =
+        false;
 };

@@ -10,7 +10,8 @@
 #include <fstream>
 #include <utility>
 
-using json = nlohmann::json;
+using json =
+    nlohmann::json;
 
 bool SceneSerializer::Save(
     const Scene& scene,
@@ -23,7 +24,7 @@ bool SceneSerializer::Save(
         "RAI Scene";
 
     root["version"] =
-        1;
+        2;
 
     root["entities"] =
         json::array();
@@ -35,8 +36,14 @@ bool SceneSerializer::Save(
     {
         json entityJson;
 
+        entityJson["id"] =
+            entity.id;
+
         entityJson["name"] =
             entity.name;
+
+        entityJson["prefab"] =
+            entity.prefab;
 
         entityJson["visible"] =
             entity.visible;
@@ -82,7 +89,11 @@ bool SceneSerializer::Save(
         path
     );
 
-    if (!filePath.parent_path().empty())
+    if (
+        !filePath
+            .parent_path()
+            .empty()
+    )
     {
         std::error_code error;
 
@@ -91,7 +102,9 @@ bool SceneSerializer::Save(
             error
         );
 
-        if (error)
+        if (
+            error
+        )
         {
             SDL_Log(
                 "Could not create directory: %s",
@@ -106,7 +119,9 @@ bool SceneSerializer::Save(
         path
     );
 
-    if (!file.is_open())
+    if (
+        !file.is_open()
+    )
     {
         SDL_Log(
             "Could not save Scene: %s",
@@ -136,7 +151,9 @@ bool SceneSerializer::Load(
         path
     );
 
-    if (!file.is_open())
+    if (
+        !file.is_open()
+    )
     {
         SDL_Log(
             "Scene file not found: %s",
@@ -150,7 +167,8 @@ bool SceneSerializer::Load(
 
     try
     {
-        file >> root;
+        file >>
+            root;
     }
     catch (
         const json::exception& exception
@@ -165,7 +183,9 @@ bool SceneSerializer::Load(
     }
 
     if (
-        !root.contains("entities") ||
+        !root.contains(
+            "entities"
+        ) ||
         !root["entities"].is_array()
     )
     {
@@ -191,10 +211,45 @@ bool SceneSerializer::Load(
                     "Entity"
                 );
 
-            Entity& entity =
-                loadedScene.CreateEntity(
-                    name
+            const std::string prefab =
+                entityJson.value(
+                    "prefab",
+                    "cube"
                 );
+
+            Entity* entityPointer =
+                nullptr;
+
+            // Старые Scene-файлы без ID тоже поддерживаем.
+
+            if (
+                entityJson.contains(
+                    "id"
+                )
+            )
+            {
+                const EntityId id =
+                    entityJson["id"]
+                        .get<EntityId>();
+
+                entityPointer =
+                    &loadedScene.CreateEntityWithId(
+                        id,
+                        name,
+                        prefab
+                    );
+            }
+            else
+            {
+                entityPointer =
+                    &loadedScene.CreateEntity(
+                        name,
+                        prefab
+                    );
+            }
+
+            Entity& entity =
+                *entityPointer;
 
             entity.visible =
                 entityJson.value(
@@ -208,7 +263,11 @@ bool SceneSerializer::Load(
                     false
                 );
 
-            if (entityJson.contains("color"))
+            if (
+                entityJson.contains(
+                    "color"
+                )
+            )
             {
                 const json& color =
                     entityJson["color"];

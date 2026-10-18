@@ -36,7 +36,7 @@ bool Application::Initialize()
 
     window =
         SDL_CreateWindow(
-            "RAI: Ashes of Eternity | Engine 0.0.13.1",
+            "RAI: Ashes of Eternity | Engine 0.0.14",
             1280,
             720,
             SDL_WINDOW_RESIZABLE

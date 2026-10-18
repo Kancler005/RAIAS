@@ -8,7 +8,8 @@ void GameWorld::CreateDefaultWorld(
 {
     Entity& ground =
         scene.CreateEntity(
-            "Ground"
+            "Ground",
+            "ground_block"
         );
 
     ground.transform.position =
@@ -36,9 +37,14 @@ void GameWorld::CreateDefaultWorld(
     ground.collidable =
         false;
 
+    // =====================================================
+    // Player
+    // =====================================================
+
     Entity& player =
         scene.CreateEntity(
-            "Player"
+            "Player",
+            "player_placeholder"
         );
 
     player.transform.position =
@@ -66,16 +72,21 @@ void GameWorld::CreateDefaultWorld(
     player.collidable =
         false;
 
+    // =====================================================
+    // Pillar 01
+    // =====================================================
+
     Entity& pillar01 =
         scene.CreateEntity(
-            "Pillar_01"
+            "Pillar_01",
+            "stone_pillar"
         );
 
     pillar01.transform.position =
     {
         -2.2f,
-        0.5f,
-        1.6f
+         0.5f,
+         1.6f
     };
 
     pillar01.transform.scale =
@@ -96,15 +107,20 @@ void GameWorld::CreateDefaultWorld(
     pillar01.collidable =
         true;
 
+    // =====================================================
+    // Pillar 02
+    // =====================================================
+
     Entity& pillar02 =
         scene.CreateEntity(
-            "Pillar_02"
+            "Pillar_02",
+            "stone_pillar"
         );
 
     pillar02.transform.position =
     {
-        2.1f,
-        0.25f,
+         2.1f,
+         0.25f,
         -1.7f
     };
 
@@ -126,9 +142,14 @@ void GameWorld::CreateDefaultWorld(
     pillar02.collidable =
         true;
 
+    // =====================================================
+    // Wall
+    // =====================================================
+
     Entity& wall =
         scene.CreateEntity(
-            "Wall_01"
+            "Wall_01",
+            "stone_wall"
         );
 
     wall.transform.position =
@@ -156,9 +177,14 @@ void GameWorld::CreateDefaultWorld(
     wall.collidable =
         true;
 
+    // =====================================================
+    // Ruin 01
+    // =====================================================
+
     Entity& ruin01 =
         scene.CreateEntity(
-            "Ruin_01"
+            "Ruin_01",
+            "ruin_block"
         );
 
     ruin01.transform.position =
@@ -193,9 +219,14 @@ void GameWorld::CreateDefaultWorld(
     ruin01.collidable =
         true;
 
+    // =====================================================
+    // Ruin 02
+    // =====================================================
+
     Entity& ruin02 =
         scene.CreateEntity(
-            "Ruin_02"
+            "Ruin_02",
+            "ruin_block"
         );
 
     ruin02.transform.position =
