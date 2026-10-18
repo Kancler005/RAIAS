@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "render/Mesh.h"
 #include "render/ModelLoader.h"
+#include "render/ProceduralMeshes.h"
 #include "scene/Scene.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -28,8 +29,13 @@ namespace
     constexpr Uint32 ASCII_GLYPH_HEIGHT =
         8;
 
-    constexpr Uint32 ASCII_GLYPH_COUNT =
+    // First 8 glyphs remain the stable fullscreen ASCII palette.
+    // Extra glyphs are reserved for world-space environment rendering.
+    constexpr Uint32 ASCII_POSTPROCESS_GLYPH_COUNT =
         8;
+
+    constexpr Uint32 ASCII_GLYPH_COUNT =
+        16;
 
     constexpr Uint32 ASCII_ATLAS_WIDTH =
         ASCII_GLYPH_WIDTH *
@@ -77,8 +83,7 @@ namespace
         [ASCII_GLYPH_COUNT]
         [ASCII_GLYPH_HEIGHT] =
     {
-        // SPACE
-
+        // 0 SPACE
         {
             "00000000",
             "00000000",
@@ -90,8 +95,7 @@ namespace
             "00000000"
         },
 
-        // .
-
+        // 1 .
         {
             "00000000",
             "00000000",
@@ -103,8 +107,7 @@ namespace
             "00011000"
         },
 
-        // :
-
+        // 2 :
         {
             "00000000",
             "00011000",
@@ -116,8 +119,7 @@ namespace
             "00000000"
         },
 
-        // -
-
+        // 3 -
         {
             "00000000",
             "00000000",
@@ -129,8 +131,7 @@ namespace
             "00000000"
         },
 
-        // +
-
+        // 4 +
         {
             "00000000",
             "00011000",
@@ -142,8 +143,7 @@ namespace
             "00000000"
         },
 
-        // *
-
+        // 5 *
         {
             "00000000",
             "01011010",
@@ -155,8 +155,7 @@ namespace
             "00000000"
         },
 
-        // #
-
+        // 6 #
         {
             "00100100",
             "00100100",
@@ -168,8 +167,7 @@ namespace
             "00100100"
         },
 
-        // @
-
+        // 7 @
         {
             "00111100",
             "01000010",
@@ -179,6 +177,102 @@ namespace
             "10000000",
             "01000010",
             "00111100"
+        },
+
+        // 8 ,
+        {
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000",
+            "00011000",
+            "00011000",
+            "00010000"
+        },
+
+        // 9 '
+        {
+            "00011000",
+            "00011000",
+            "00010000",
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000"
+        },
+
+        // 10 /
+        {
+            "00000001",
+            "00000010",
+            "00000100",
+            "00001000",
+            "00010000",
+            "00100000",
+            "01000000",
+            "10000000"
+        },
+
+        // 11 BACKSLASH
+        {
+            "10000000",
+            "01000000",
+            "00100000",
+            "00010000",
+            "00001000",
+            "00000100",
+            "00000010",
+            "00000001"
+        },
+
+        // 12 |
+        {
+            "00011000",
+            "00011000",
+            "00011000",
+            "00011000",
+            "00011000",
+            "00011000",
+            "00011000",
+            "00011000"
+        },
+
+        // 13 ~
+        {
+            "00000000",
+            "00000000",
+            "01100011",
+            "10011100",
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000"
+        },
+
+        // 14 ^
+        {
+            "00011000",
+            "00100100",
+            "01000010",
+            "10000001",
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000"
+        },
+
+        // 15 %
+        {
+            "11000001",
+            "11000010",
+            "00000100",
+            "00001000",
+            "00010000",
+            "00100000",
+            "01000011",
+            "10000011"
         }
     };
 
@@ -380,6 +474,44 @@ bool Renderer::Initialize(
     }
 
     // =====================================================
+    // Procedural environment models
+    // =====================================================
+
+    if (
+        !ProceduralMeshes::CreateRockSmall(
+            device,
+            rockSmallMesh
+        ) ||
+        !ProceduralMeshes::CreateRockWide(
+            device,
+            rockWideMesh
+        ) ||
+        !ProceduralMeshes::CreateRockTall(
+            device,
+            rockTallMesh
+        ) ||
+        !ProceduralMeshes::CreateRuinedShrine(
+            device,
+            ruinedShrineMesh
+        ) ||
+        !ProceduralMeshes::CreateBrokenWatchtower(
+            device,
+            brokenWatchtowerMesh
+        )
+    )
+    {
+        SDL_Log(
+            "Procedural environment mesh creation failed."
+        );
+
+        return false;
+    }
+
+    SDL_Log(
+        "Procedural world models ready: 3 rocks + shrine + watchtower."
+    );
+
+    // =====================================================
     // First imported model
     //
     // For this milestone Enemy_01 automatically uses
@@ -471,11 +603,11 @@ bool Renderer::Initialize(
 
     if (
         !glyphRenderer.CreateDarkFantasyGround(
-            -4.35f,
-             4.35f,
-            -4.35f,
-             4.35f,
-             0.28f,
+            -18.25f,
+             18.25f,
+            -18.25f,
+             18.25f,
+             0.30f,
             -0.46f
         )
     )
@@ -1406,6 +1538,66 @@ void Renderer::DrawEntity(
 
     if (
         entity.prefab ==
+            "rock_small"
+    )
+    {
+        rockSmallMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "rock_wide"
+    )
+    {
+        rockWideMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "rock_tall"
+    )
+    {
+        rockTallMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "ruined_shrine"
+    )
+    {
+        ruinedShrineMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "broken_watchtower"
+    )
+    {
+        brokenWatchtowerMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
             "enemy_placeholder" &&
         importedMesh.IsValid()
     )
@@ -1825,7 +2017,7 @@ bool Renderer::Render(
     asciiData.atlasInfo =
     {
         static_cast<float>(
-            ASCII_GLYPH_COUNT
+            ASCII_POSTPROCESS_GLYPH_COUNT
         ),
 
         static_cast<float>(
@@ -2209,6 +2401,16 @@ void Renderer::Shutdown()
         offscreenSampler =
             nullptr;
     }
+
+    brokenWatchtowerMesh.Destroy();
+
+    ruinedShrineMesh.Destroy();
+
+    rockTallMesh.Destroy();
+
+    rockWideMesh.Destroy();
+
+    rockSmallMesh.Destroy();
 
     importedMesh.Destroy();
 

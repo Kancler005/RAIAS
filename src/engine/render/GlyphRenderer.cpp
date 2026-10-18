@@ -12,10 +12,10 @@
 namespace
 {
     constexpr Uint32 ASCII_GLYPH_COUNT =
-        8;
+        16;
 
     constexpr Uint32 ASCII_ATLAS_WIDTH =
-        64;
+        128;
 
     constexpr Uint32 ASCII_ATLAS_HEIGHT =
         8;
@@ -840,39 +840,46 @@ void GlyphRenderer::AppendMaterialGlyph(
     {
         case GlyphMaterialKind::AshSoil:
         {
-            // . : - with rare +
+            // . : , - with rare +
             const Uint32 choice =
                 (
                     hash >>
                     8
                 ) %
-                10u;
+                12u;
 
             if (
                 choice < 4u
             )
             {
                 glyph =
-                    1.0f;
+                    1.0f; // .
             }
             else if (
                 choice < 7u
             )
             {
                 glyph =
-                    2.0f;
+                    2.0f; // :
             }
             else if (
                 choice < 9u
             )
             {
                 glyph =
-                    3.0f;
+                    8.0f; // ,
+            }
+            else if (
+                choice < 11u
+            )
+            {
+                glyph =
+                    3.0f; // -
             }
             else
             {
                 glyph =
-                    4.0f;
+                    4.0f; // +
             }
 
             const glm::vec3 coldAsh
@@ -917,40 +924,54 @@ void GlyphRenderer::AppendMaterialGlyph(
 
         case GlyphMaterialKind::DeadGrass:
         {
-            // ":" "-" "+" "*" gives thin-to-dense tufts with
-            // our current 8-glyph atlas.
+            // Dedicated environment glyphs:
+            // , ' / \ | with rare *
             const Uint32 choice =
                 (
                     hash >>
                     10
                 ) %
-                10u;
+                12u;
 
             if (
                 choice < 2u
             )
             {
                 glyph =
-                    2.0f;
+                    8.0f;  // ,
             }
             else if (
                 choice < 5u
             )
             {
                 glyph =
-                    3.0f;
+                    9.0f;  // '
+            }
+            else if (
+                choice < 7u
+            )
+            {
+                glyph =
+                    10.0f; // /
             }
             else if (
                 choice < 9u
             )
             {
                 glyph =
-                    4.0f;
+                    11.0f; // backslash glyph
+            }
+            else if (
+                choice < 11u
+            )
+            {
+                glyph =
+                    12.0f; // |
             }
             else
             {
                 glyph =
-                    5.0f;
+                    5.0f;  // *
             }
 
             const glm::vec3 deadOlive
@@ -997,39 +1018,46 @@ void GlyphRenderer::AppendMaterialGlyph(
 
         case GlyphMaterialKind::Stone:
         {
-            // Dense symbols only in small rocky clusters.
+            // Stone uses heavy marks plus ^ and %.
             const Uint32 choice =
                 (
                     hash >>
                     12
                 ) %
-                8u;
+                10u;
 
             if (
                 choice < 2u
             )
             {
                 glyph =
-                    3.0f;
+                    3.0f;  // -
             }
             else if (
-                choice < 5u
+                choice < 4u
             )
             {
                 glyph =
-                    4.0f;
+                    5.0f;  // *
             }
             else if (
-                choice < 7u
+                choice < 6u
             )
             {
                 glyph =
-                    5.0f;
+                    6.0f;  // #
+            }
+            else if (
+                choice < 8u
+            )
+            {
+                glyph =
+                    14.0f; // ^
             }
             else
             {
                 glyph =
-                    6.0f;
+                    15.0f; // %
             }
 
             const glm::vec3 charcoal

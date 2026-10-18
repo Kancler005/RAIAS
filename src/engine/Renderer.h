@@ -85,6 +85,13 @@ private:
 
     Mesh cubeMesh;
 
+    // Procedural environment models.
+    Mesh rockSmallMesh;
+    Mesh rockWideMesh;
+    Mesh rockTallMesh;
+    Mesh ruinedShrineMesh;
+    Mesh brokenWatchtowerMesh;
+
     // First imported GLB/glTF mesh.
     // 0.0.18+ will move this into AssetManager.
     Mesh importedMesh;

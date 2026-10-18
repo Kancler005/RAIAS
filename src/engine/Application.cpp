@@ -2,6 +2,7 @@
 
 #include "engine/physics/CollisionSystem.h"
 #include "engine/scene/SceneSerializer.h"
+#include "engine/scene/WorldExpansion.h"
 
 #include "game/EnemySystem.h"
 #include "game/GameWorld.h"
@@ -18,10 +19,10 @@ namespace
         "assets/worlds/test_world.json";
 
     constexpr const char* GAME_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.23";
+        "RAI: Ashes of Eternity | Engine 0.0.24";
 
     constexpr const char* EDITOR_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.23 | EDITOR MODE";
+        "RAI: Ashes of Eternity | Engine 0.0.24 | EDITOR MODE";
 }
 
 // =========================================================
@@ -114,6 +115,36 @@ bool Application::Initialize()
             scene,
             WORLD_PATH
         );
+    }
+
+    // =====================================================
+    // One-time world expansion
+    // =====================================================
+
+    if (
+        WorldExpansion::Apply(
+            scene
+        )
+    )
+    {
+        if (
+            !SceneSerializer::Save(
+                scene,
+                WORLD_PATH
+            )
+        )
+        {
+            SDL_Log(
+                "WARNING: expanded world could not be saved."
+            );
+        }
+        else
+        {
+            SDL_Log(
+                "Expanded world saved to %s",
+                WORLD_PATH
+            );
+        }
     }
 
     RebuildGameState();
@@ -1199,15 +1230,15 @@ void Application::UpdateGameplay(
     player->transform.position.x =
         glm::clamp(
             player->transform.position.x,
-            -4.0f,
-            4.0f
+            -17.0f,
+            17.0f
         );
 
     player->transform.position.z =
         glm::clamp(
             player->transform.position.z,
-            -4.0f,
-            4.0f
+            -17.0f,
+            17.0f
         );
 
     // =====================================================

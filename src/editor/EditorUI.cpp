@@ -418,6 +418,14 @@ void EditorUI::DrawHierarchy(
         scene.GetEntities()
     )
     {
+        if (
+            entity.prefab ==
+                "editor_marker"
+        )
+        {
+            continue;
+        }
+
         const bool selected =
             entity.id ==
             selectedEntityId;
