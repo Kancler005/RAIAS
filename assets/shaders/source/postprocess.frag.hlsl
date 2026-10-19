@@ -24,14 +24,14 @@ cbuffer AsciiData : register(b0, space3)
     // w = cell height
     float4 screenAndCell;
 
-    // x = glyph count
-    // y = atlas width
+    // x = fill-glyph count
+    // y = full atlas width
     // z = atlas height
     // w = unused
     float4 atlasInfo;
 
     // x = previous-frame influence
-    // y = history valid (0 / 1)
+    // y = history valid
     // z,w = unused
     float4 temporalInfo;
 };
@@ -41,6 +41,45 @@ struct PSInput
     float4 position : SV_Position;
     float2 uv       : TEXCOORD0;
 };
+
+// =========================================================
+// Atlas indices
+// =========================================================
+
+static const int GLYPH_SPACE      = 0;
+static const int GLYPH_DOT        = 1;
+static const int GLYPH_COLON      = 2;
+static const int GLYPH_MINUS      = 3;
+static const int GLYPH_PLUS       = 4;
+static const int GLYPH_STAR       = 5;
+static const int GLYPH_HASH       = 6;
+static const int GLYPH_AT         = 7;
+
+static const int GLYPH_COMMA      = 8;
+static const int GLYPH_APOSTROPHE = 9;
+static const int GLYPH_SLASH      = 10;
+static const int GLYPH_BACKSLASH  = 11;
+static const int GLYPH_PIPE       = 12;
+static const int GLYPH_TILDE      = 13;
+static const int GLYPH_CARET      = 14;
+static const int GLYPH_PERCENT    = 15;
+
+static const int GLYPH_LPAREN     = 16;
+static const int GLYPH_RPAREN     = 17;
+static const int GLYPH_LBRACKET   = 18;
+static const int GLYPH_RBRACKET   = 19;
+static const int GLYPH_LBRACE     = 20;
+static const int GLYPH_RBRACE     = 21;
+static const int GLYPH_UNDERSCORE = 22;
+static const int GLYPH_EQUALS     = 23;
+static const int GLYPH_SEMICOLON  = 24;
+static const int GLYPH_BACKTICK   = 25;
+static const int GLYPH_LESS       = 26;
+static const int GLYPH_GREATER    = 27;
+static const int GLYPH_EXCLAM     = 28;
+static const int GLYPH_QUESTION   = 29;
+static const int GLYPH_AMPERSAND  = 30;
+static const int GLYPH_DOLLAR     = 31;
 
 float GetLuminance(
     float3 color
@@ -68,13 +107,9 @@ float3 SampleScene(
             screenSize - float2(0.5, 0.5)
         );
 
-    float2 uv =
-        pixelPosition /
-        screenSize;
-
     return sceneTexture.SampleLevel(
         sceneSampler,
-        uv,
+        pixelPosition / screenSize,
         0.0
     ).rgb;
 }
@@ -91,13 +126,9 @@ float3 SampleHistory(
             screenSize - float2(0.5, 0.5)
         );
 
-    float2 uv =
-        pixelPosition /
-        screenSize;
-
     return historyTexture.SampleLevel(
         historySampler,
-        uv,
+        pixelPosition / screenSize,
         0.0
     ).rgb;
 }
@@ -115,13 +146,13 @@ float SampleGlyphMask(
 
     float glyphX =
         floor(
-            localPosition.x *
+            saturate(localPosition.x) *
             glyphWidth
         );
 
     float glyphY =
         floor(
-            localPosition.y *
+            saturate(localPosition.y) *
             glyphHeight
         );
 
@@ -164,6 +195,17 @@ float SampleGlyphMask(
     ).r;
 }
 
+float3 MaxColor(
+    float3 a,
+    float3 b
+)
+{
+    return max(
+        a,
+        b
+    );
+}
+
 float4 main(
     PSInput input
 ) : SV_Target0
@@ -178,7 +220,7 @@ float4 main(
         input.position.xy;
 
     // =====================================================
-    // Current ASCII cell
+    // High-detail cell
     // =====================================================
 
     float2 cellIndex =
@@ -198,18 +240,30 @@ float4 main(
 
     float2 offsetX =
         float2(
-            cellSize.x * 0.30,
+            max(
+                cellSize.x * 0.42,
+                1.0
+            ),
             0.0
         );
 
     float2 offsetY =
         float2(
             0.0,
-            cellSize.y * 0.30
+            max(
+                cellSize.y * 0.42,
+                1.0
+            )
+        );
+
+    float2 diagonalOffset =
+        float2(
+            offsetX.x,
+            offsetY.y
         );
 
     // =====================================================
-    // Current frame samples
+    // Nine current-frame samples
     // =====================================================
 
     float3 centerColor =
@@ -242,91 +296,179 @@ float4 main(
             screenSize
         );
 
+    float3 topLeftColor =
+        SampleScene(
+            cellCenter - diagonalOffset,
+            screenSize
+        );
+
+    float3 topRightColor =
+        SampleScene(
+            cellCenter +
+            float2(
+                diagonalOffset.x,
+                -diagonalOffset.y
+            ),
+            screenSize
+        );
+
+    float3 bottomLeftColor =
+        SampleScene(
+            cellCenter +
+            float2(
+                -diagonalOffset.x,
+                diagonalOffset.y
+            ),
+            screenSize
+        );
+
+    float3 bottomRightColor =
+        SampleScene(
+            cellCenter + diagonalOffset,
+            screenSize
+        );
+
     float3 averageColor =
         (
             centerColor * 4.0 +
             leftColor +
             rightColor +
             topColor +
-            bottomColor
+            bottomColor +
+            topLeftColor * 0.5 +
+            topRightColor * 0.5 +
+            bottomLeftColor * 0.5 +
+            bottomRightColor * 0.5
         ) /
-        8.0;
+        10.0;
+
+    // =====================================================
+    // Luminance / edge field
+    // =====================================================
 
     float centerLum =
-        GetLuminance(
-            centerColor
-        );
+        GetLuminance(centerColor);
+
+    float leftLum =
+        GetLuminance(leftColor);
+
+    float rightLum =
+        GetLuminance(rightColor);
+
+    float topLum =
+        GetLuminance(topColor);
+
+    float bottomLum =
+        GetLuminance(bottomColor);
+
+    float topLeftLum =
+        GetLuminance(topLeftColor);
+
+    float topRightLum =
+        GetLuminance(topRightColor);
+
+    float bottomLeftLum =
+        GetLuminance(bottomLeftColor);
+
+    float bottomRightLum =
+        GetLuminance(bottomRightColor);
 
     float averageLum =
         GetLuminance(
             averageColor
         );
 
-    float leftLum =
-        GetLuminance(
-            leftColor
-        );
-
-    float rightLum =
-        GetLuminance(
-            rightColor
-        );
-
-    float topLum =
-        GetLuminance(
-            topColor
-        );
-
-    float bottomLum =
-        GetLuminance(
-            bottomColor
-        );
-
-    // =====================================================
-    // Edge detection
-    // =====================================================
-
+    // A luminance change left/right means a VERTICAL contour.
     float edgeX =
         abs(
             leftLum -
             rightLum
         );
 
+    // A luminance change top/bottom means a HORIZONTAL contour.
     float edgeY =
         abs(
             topLum -
             bottomLum
         );
 
-    float edgeCenter =
+    // NW -> SE gradient => slash contour.
+    float edgeDiagSlash =
+        abs(
+            topLeftLum -
+            bottomRightLum
+        );
+
+    // NE -> SW gradient => backslash contour.
+    float edgeDiagBackslash =
+        abs(
+            topRightLum -
+            bottomLeftLum
+        );
+
+    float localMaxLum =
         max(
-            abs(
-                centerLum -
-                leftLum
-            ),
-            abs(
-                centerLum -
-                rightLum
+            centerLum,
+            max(
+                max(
+                    leftLum,
+                    rightLum
+                ),
+                max(
+                    topLum,
+                    bottomLum
+                )
             )
         );
 
-    edgeCenter =
+    localMaxLum =
         max(
-            edgeCenter,
-            abs(
-                centerLum -
-                topLum
+            localMaxLum,
+            max(
+                max(
+                    topLeftLum,
+                    topRightLum
+                ),
+                max(
+                    bottomLeftLum,
+                    bottomRightLum
+                )
             )
         );
 
-    edgeCenter =
-        max(
-            edgeCenter,
-            abs(
-                centerLum -
-                bottomLum
+    float localMinLum =
+        min(
+            centerLum,
+            min(
+                min(
+                    leftLum,
+                    rightLum
+                ),
+                min(
+                    topLum,
+                    bottomLum
+                )
             )
         );
+
+    localMinLum =
+        min(
+            localMinLum,
+            min(
+                min(
+                    topLeftLum,
+                    topRightLum
+                ),
+                min(
+                    bottomLeftLum,
+                    bottomRightLum
+                )
+            )
+        );
+
+    float silhouetteRange =
+        localMaxLum -
+        localMinLum;
 
     float edge =
         max(
@@ -334,7 +476,10 @@ float4 main(
                 edgeX,
                 edgeY
             ),
-            edgeCenter
+            max(
+                edgeDiagSlash,
+                edgeDiagBackslash
+            )
         );
 
     // =====================================================
@@ -345,7 +490,8 @@ float4 main(
         averageLum;
 
     if (
-        temporalInfo.y > 0.5
+        temporalInfo.y >
+        0.5
     )
     {
         float3 historyCenter =
@@ -404,15 +550,17 @@ float4 main(
     }
 
     // =====================================================
-    // Dark background removal
+    // True black background
     // =====================================================
 
     const float blackThreshold =
-        0.025;
+        0.020;
 
     if (
-        averageLum < blackThreshold &&
-        edge < 0.018
+        localMaxLum <
+            blackThreshold &&
+        edge <
+            0.014
     )
     {
         return float4(
@@ -424,7 +572,7 @@ float4 main(
     }
 
     // =====================================================
-    // Stable brightness
+    // Fill glyph
     // =====================================================
 
     float brightness =
@@ -433,38 +581,31 @@ float4 main(
                 stableLum -
                 blackThreshold
             ) *
-            2.8
+            3.05
         );
 
     brightness +=
         edge *
-        3.2;
+        1.65;
 
     brightness =
         saturate(
-            brightness
+            pow(
+                brightness,
+                0.78
+            )
         );
 
-    brightness =
-        pow(
-            brightness,
-            0.72
-        );
-
-    int glyphCount =
+    int fillGlyphCount =
         max(
             (int)atlasInfo.x,
             1
         );
 
-    // =====================================================
-    // Smooth glyph transition
-    // =====================================================
-
     float glyphValue =
         brightness *
         (
-            glyphCount -
+            fillGlyphCount -
             1
         );
 
@@ -474,19 +615,19 @@ float4 main(
                 glyphValue
             ),
             0,
-            glyphCount - 1
+            fillGlyphCount - 1
         );
 
     int glyphB =
         min(
             glyphA + 1,
-            glyphCount - 1
+            fillGlyphCount - 1
         );
 
     float glyphBlend =
         smoothstep(
-            0.25,
-            0.75,
+            0.22,
+            0.78,
             frac(
                 glyphValue
             )
@@ -498,52 +639,269 @@ float4 main(
             cellSize
         );
 
-    float maskA =
+    float fillMaskA =
         SampleGlyphMask(
             glyphA,
             localPosition
         );
 
-    float maskB =
+    float fillMaskB =
         SampleGlyphMask(
             glyphB,
             localPosition
         );
 
-    float glyphMask =
+    float fillMask =
         lerp(
-            maskA,
-            maskB,
+            fillMaskA,
+            fillMaskB,
             glyphBlend
         );
 
     // =====================================================
-    // Final color uses CURRENT frame, not history.
-    // This avoids visible motion trails.
+    // Outline classification
+    //
+    // We do not place []{}() everywhere. They are reserved
+    // for strong silhouette cells so objects keep readable
+    // borders without turning the entire image into noise.
     // =====================================================
 
-    float3 finalObjectColor =
+    float outlineStrength =
+        silhouetteRange *
+        0.72 +
+        edge *
+        0.55;
+
+    bool isOutline =
+        localMaxLum >
+            0.035 &&
+        outlineStrength >
+            0.078 &&
+        (
+            localMinLum <
+                localMaxLum *
+                0.58 ||
+            edge >
+                0.115
+        );
+
+    int outlineGlyph =
+        GLYPH_PIPE;
+
+    if (
+        isOutline
+    )
+    {
+        bool cornerLike =
+            edgeX >
+                0.060 &&
+            edgeY >
+                0.060;
+
+        if (
+            cornerLike &&
+            edgeX >=
+                max(
+                    edgeDiagSlash,
+                    edgeDiagBackslash
+                )
+        )
+        {
+            // Bright material on the right means this is a LEFT edge.
+            bool leftEdge =
+                rightLum >
+                leftLum;
+
+            if (
+                outlineStrength >
+                    0.24
+            )
+            {
+                outlineGlyph =
+                    leftEdge
+                        ? GLYPH_LBRACE
+                        : GLYPH_RBRACE;
+            }
+            else
+            {
+                outlineGlyph =
+                    leftEdge
+                        ? GLYPH_LBRACKET
+                        : GLYPH_RBRACKET;
+            }
+        }
+        else
+        {
+            float dominant =
+                edgeX;
+
+            outlineGlyph =
+                GLYPH_PIPE;
+
+            if (
+                edgeY >
+                dominant
+            )
+            {
+                dominant =
+                    edgeY;
+
+                outlineGlyph =
+                    outlineStrength >
+                        0.18
+                        ? GLYPH_EQUALS
+                        : GLYPH_UNDERSCORE;
+            }
+
+            if (
+                edgeDiagSlash >
+                dominant
+            )
+            {
+                dominant =
+                    edgeDiagSlash;
+
+                outlineGlyph =
+                    GLYPH_SLASH;
+            }
+
+            if (
+                edgeDiagBackslash >
+                dominant
+            )
+            {
+                dominant =
+                    edgeDiagBackslash;
+
+                outlineGlyph =
+                    GLYPH_BACKSLASH;
+            }
+
+            // Vertical silhouettes can become curved/square/brace borders.
+            if (
+                dominant ==
+                    edgeX &&
+                edgeX >
+                    0.070
+            )
+            {
+                bool leftEdge =
+                    rightLum >
+                    leftLum;
+
+                if (
+                    outlineStrength >
+                        0.27
+                )
+                {
+                    outlineGlyph =
+                        leftEdge
+                            ? GLYPH_LBRACE
+                            : GLYPH_RBRACE;
+                }
+                else if (
+                    outlineStrength >
+                        0.19
+                )
+                {
+                    outlineGlyph =
+                        leftEdge
+                            ? GLYPH_LBRACKET
+                            : GLYPH_RBRACKET;
+                }
+                else if (
+                    outlineStrength >
+                        0.12
+                )
+                {
+                    outlineGlyph =
+                        leftEdge
+                            ? GLYPH_LPAREN
+                            : GLYPH_RPAREN;
+                }
+                else
+                {
+                    outlineGlyph =
+                        GLYPH_PIPE;
+                }
+            }
+        }
+    }
+
+    float glyphMask =
+        fillMask;
+
+    if (
+        isOutline
+    )
+    {
+        glyphMask =
+            SampleGlyphMask(
+                outlineGlyph,
+                localPosition
+            );
+    }
+
+    // =====================================================
+    // Color
+    // =====================================================
+
+    float3 objectColor =
         pow(
             saturate(
                 averageColor *
-                1.55
+                1.62
             ),
             0.84
         );
 
-    float edgeBoost =
-        saturate(
-            edge *
-            4.0
-        );
+    if (
+        isOutline
+    )
+    {
+        float3 brightestColor =
+            MaxColor(
+                centerColor,
+                MaxColor(
+                    MaxColor(
+                        leftColor,
+                        rightColor
+                    ),
+                    MaxColor(
+                        topColor,
+                        bottomColor
+                    )
+                )
+            );
 
-    finalObjectColor *=
-        1.0 +
-        edgeBoost *
-        0.25;
+        objectColor =
+            pow(
+                saturate(
+                    brightestColor *
+                    1.82
+                ),
+                0.80
+            );
+
+        objectColor *=
+            1.10;
+    }
+    else
+    {
+        float edgeBoost =
+            saturate(
+                edge *
+                3.2
+            );
+
+        objectColor *=
+            1.0 +
+            edgeBoost *
+            0.16;
+    }
 
     float3 finalColor =
-        finalObjectColor *
+        objectColor *
         glyphMask;
 
     return float4(

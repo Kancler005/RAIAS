@@ -12,10 +12,10 @@
 namespace
 {
     constexpr Uint32 ASCII_GLYPH_COUNT =
-        16;
+        32;
 
     constexpr Uint32 ASCII_ATLAS_WIDTH =
-        128;
+        256;
 
     constexpr Uint32 ASCII_ATLAS_HEIGHT =
         8;
