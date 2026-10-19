@@ -9,8 +9,6 @@
 #include "render/GlyphRenderer.h"
 
 #include <string>
-#include <unordered_map>
-#include <cstdint>
 
 class Camera;
 class Scene;
@@ -146,12 +144,6 @@ private:
 
     bool historyValid =
         false;
-
-    std::unordered_map<std::uint64_t, glm::vec3>
-        previousEntityPositions;
-
-    std::unordered_map<std::uint64_t, float>
-        entityMotionBlend;
 
     float animationTime =
         0.0f;

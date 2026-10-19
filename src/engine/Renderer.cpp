@@ -18,7 +18,6 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include <unordered_map>
 #include <algorithm>
 #include <cmath>
 
@@ -1854,89 +1853,36 @@ void Renderer::DrawAnimatedKnight(
             entity.editorSelected
         );
 
-    const glm::vec3 currentPosition =
-        entity.transform.position;
-
-    const glm::vec2 currentXZ =
-        {
-            currentPosition.x,
-            currentPosition.z
-        };
-
-    glm::vec2 previousXZ =
-        currentXZ;
-
-    const auto previousIt =
-        previousEntityPositions.find(
-            static_cast<std::uint64_t>(
-                entity.id
-            )
+    const float motionBlend =
+        glm::clamp(
+            entity.runtimeMoveAmount,
+            0.0f,
+            1.0f
         );
 
-    if (
-        previousIt !=
-        previousEntityPositions.end()
-    )
-    {
-        previousXZ =
-        {
-            previousIt->second.x,
-            previousIt->second.z
-        };
-    }
-
-    previousEntityPositions[
-        static_cast<std::uint64_t>(
-            entity.id
-        )
-    ] =
-        currentPosition;
-
-    const float horizontalDistance =
+    const float movementSpeed =
         glm::length(
-            currentXZ -
-            previousXZ
-        );
-
-    const float speed =
-        horizontalDistance /
-        std::max(
-            animationDeltaTime,
-            0.0001f
-        );
-
-    const float targetMotion =
-        speed > 0.08f
-            ? 1.0f
-            : 0.0f;
-
-    float& motionBlend =
-        entityMotionBlend[
-            static_cast<std::uint64_t>(
-                entity.id
-            )
-        ];
-
-    motionBlend =
-        glm::mix(
-            motionBlend,
-            targetMotion,
-            glm::clamp(
-                animationDeltaTime *
-                    (
-                        targetMotion >
-                            motionBlend
-                            ? 10.0f
-                            : 7.0f
-                    ),
-                0.0f,
-                1.0f
+            glm::vec2(
+                entity.runtimeVelocity.x,
+                entity.runtimeVelocity.z
             )
         );
+
+    // Keep the animation alive and obvious even at low movement speed.
+    const float walkFrequency =
+        5.2f +
+        motionBlend *
+        4.2f +
+        glm::clamp(
+            movementSpeed,
+            0.0f,
+            4.0f
+        ) *
+        0.30f;
 
     const float walkPhase =
         animationTime *
-        7.2f;
+        walkFrequency;
 
     const float idlePhase =
         animationTime *
@@ -1954,17 +1900,17 @@ void Renderer::DrawAnimatedKnight(
 
     const float legSwing =
         walkSin *
-        33.0f *
+        52.0f *
         motionBlend;
 
     const float armSwing =
         walkSin *
-        29.0f *
+        42.0f *
         motionBlend;
 
     const float torsoTwist =
         walkCos *
-        4.0f *
+        7.5f *
         motionBlend;
 
     const float idleBreath =
@@ -1981,7 +1927,7 @@ void Renderer::DrawAnimatedKnight(
         std::abs(
             walkSin
         ) *
-        0.085f *
+        0.13f *
         motionBlend +
         std::sin(
             idlePhase
@@ -1994,9 +1940,9 @@ void Renderer::DrawAnimatedKnight(
             3.1f
         ) *
         (
-            5.0f +
+            7.0f +
             motionBlend *
-            8.0f
+            14.0f
         );
 
     const glm::mat4 baseModel =
@@ -2065,7 +2011,9 @@ void Renderer::DrawAnimatedKnight(
             {
                 -0.18f,
                 0.48f + bob,
-                0.0f
+                walkSin *
+                    0.22f *
+                    motionBlend
             },
             {
                 legSwing,
@@ -2091,7 +2039,9 @@ void Renderer::DrawAnimatedKnight(
             {
                 0.18f,
                 0.48f + bob,
-                0.0f
+                -walkSin *
+                    0.22f *
+                    motionBlend
             },
             {
                 -legSwing,
@@ -2118,7 +2068,10 @@ void Renderer::DrawAnimatedKnight(
             {
                 -0.18f,
                 0.82f + bob,
-                0.02f
+                0.02f +
+                    walkSin *
+                    0.13f *
+                    motionBlend
             },
             {
                 legSwing * 0.55f,
@@ -2144,7 +2097,10 @@ void Renderer::DrawAnimatedKnight(
             {
                 0.18f,
                 0.82f + bob,
-                0.02f
+                0.02f -
+                    walkSin *
+                    0.13f *
+                    motionBlend
             },
             {
                 -legSwing * 0.55f,
@@ -2332,7 +2288,9 @@ void Renderer::DrawAnimatedKnight(
             {
                 -0.42f,
                 1.38f + bob,
-                0.0f
+                -walkSin *
+                    0.16f *
+                    motionBlend
             },
             {
                 -armSwing * 0.78f,
@@ -2358,7 +2316,9 @@ void Renderer::DrawAnimatedKnight(
             {
                 0.42f,
                 1.38f + bob,
-                0.0f
+                walkSin *
+                    0.16f *
+                    motionBlend
             },
             {
                 armSwing,
@@ -3704,10 +3664,6 @@ void Renderer::Shutdown()
 
     renderHeight =
         0;
-
-    previousEntityPositions.clear();
-
-    entityMotionBlend.clear();
 
     animationTime =
         0.0f;

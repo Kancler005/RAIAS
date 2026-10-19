@@ -39,4 +39,15 @@ struct Entity
     // It is intentionally NOT saved to the scene JSON.
     bool editorSelected =
         false;
+
+    // Runtime-only character animation state.
+    // These values are not serialized.
+    glm::vec3 runtimeVelocity{
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    float runtimeMoveAmount =
+        0.0f;
 };

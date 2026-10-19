@@ -1217,11 +1217,110 @@ void Application::UpdateGameplay(
         playerVelocity *
         deltaTime;
 
+    const glm::vec3 positionBeforeMove =
+        player->transform.position;
+
     CollisionSystem::Move(
         scene,
         *player,
         movementDelta
     );
+
+    const glm::vec3 actualMovement =
+        player->transform.position -
+        positionBeforeMove;
+
+    const float safeDeltaTime =
+        glm::max(
+            deltaTime,
+            0.0001f
+        );
+
+    player->runtimeVelocity =
+        actualMovement /
+        safeDeltaTime;
+
+    const float actualHorizontalSpeed =
+        glm::length(
+            glm::vec2(
+                player->runtimeVelocity.x,
+                player->runtimeVelocity.z
+            )
+        );
+
+    player->runtimeMoveAmount =
+        glm::clamp(
+            actualHorizontalSpeed /
+            glm::max(
+                playerSpeed,
+                0.001f
+            ),
+            0.0f,
+            1.0f
+        );
+
+    // =====================================================
+    // Knight Facing Direction
+    //
+    // The knight model faces local +Z. Rotate that forward
+    // direction toward the actual world-space movement.
+    // =====================================================
+
+    if (
+        actualHorizontalSpeed >
+        0.04f
+    )
+    {
+        const glm::vec3 facingDirection =
+            glm::normalize(
+                glm::vec3(
+                    player->runtimeVelocity.x,
+                    0.0f,
+                    player->runtimeVelocity.z
+                )
+            );
+
+        const float targetYaw =
+            glm::degrees(
+                std::atan2(
+                    facingDirection.x,
+                    facingDirection.z
+                )
+            );
+
+        float yawDelta =
+            targetYaw -
+            player->transform.rotation.y;
+
+        while (
+            yawDelta >
+            180.0f
+        )
+        {
+            yawDelta -=
+                360.0f;
+        }
+
+        while (
+            yawDelta <
+            -180.0f
+        )
+        {
+            yawDelta +=
+                360.0f;
+        }
+
+        const float turnBlend =
+            1.0f -
+            std::exp(
+                -14.0f *
+                deltaTime
+            );
+
+        player->transform.rotation.y +=
+            yawDelta *
+            turnBlend;
+    }
 
     // =====================================================
     // Temporary World Bounds
