@@ -23,6 +23,7 @@ Current version: **v0.0.27 — Animated Knight Player**
 RAI is not a terminal game.
 
 The world is rendered as true 3D geometry and then converted into a colored ASCII image.
+<img width="2156" height="1422" alt="image" src="https://github.com/user-attachments/assets/515f2ef0-3714-4836-8091-fa186b7c27e6" />
 
 Current pipeline:
 
