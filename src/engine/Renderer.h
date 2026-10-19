@@ -9,6 +9,8 @@
 #include "render/GlyphRenderer.h"
 
 #include <string>
+#include <unordered_map>
+#include <cstdint>
 
 class Camera;
 class Scene;
@@ -62,6 +64,22 @@ private:
     bool UploadAsciiAtlas();
 
     bool CreatePipelines();
+
+    void DrawModelWithColor(
+        SDL_GPUCommandBuffer* commandBuffer,
+        SDL_GPURenderPass* renderPass,
+        const glm::mat4& viewProjection,
+        const glm::mat4& model,
+        const glm::vec4& color,
+        Mesh& mesh
+    );
+
+    void DrawAnimatedKnight(
+        SDL_GPUCommandBuffer* commandBuffer,
+        SDL_GPURenderPass* renderPass,
+        const glm::mat4& viewProjection,
+        const Entity& entity
+    );
 
     void DrawEntity(
         SDL_GPUCommandBuffer* commandBuffer,
@@ -128,4 +146,16 @@ private:
 
     bool historyValid =
         false;
+
+    std::unordered_map<std::uint64_t, glm::vec3>
+        previousEntityPositions;
+
+    std::unordered_map<std::uint64_t, float>
+        entityMotionBlend;
+
+    float animationTime =
+        0.0f;
+
+    float animationDeltaTime =
+        1.0f / 60.0f;
 };

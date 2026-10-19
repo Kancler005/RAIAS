@@ -7,6 +7,8 @@
 #include "scene/Scene.h"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/common.hpp>
 
 #include <imgui_impl_sdlgpu3.h>
 
@@ -16,6 +18,9 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <cmath>
 
 // =========================================================
 // Internal Renderer Data
@@ -64,6 +69,94 @@ namespace
         glm::vec4 atlasInfo;
         glm::vec4 temporalInfo;
     };
+
+    constexpr float PI =
+        3.14159265359f;
+
+    glm::mat4 ComposeLocalModel(
+        const glm::mat4& baseModel,
+        const glm::vec3& localPosition,
+        const glm::vec3& localRotationDegrees,
+        const glm::vec3& localScale
+    )
+    {
+        glm::mat4 model =
+            glm::translate(
+                baseModel,
+                localPosition
+            );
+
+        model =
+            glm::rotate(
+                model,
+                glm::radians(
+                    localRotationDegrees.y
+                ),
+                glm::vec3(
+                    0.0f,
+                    1.0f,
+                    0.0f
+                )
+            );
+
+        model =
+            glm::rotate(
+                model,
+                glm::radians(
+                    localRotationDegrees.x
+                ),
+                glm::vec3(
+                    1.0f,
+                    0.0f,
+                    0.0f
+                )
+            );
+
+        model =
+            glm::rotate(
+                model,
+                glm::radians(
+                    localRotationDegrees.z
+                ),
+                glm::vec3(
+                    0.0f,
+                    0.0f,
+                    1.0f
+                )
+            );
+
+        model =
+            glm::scale(
+                model,
+                localScale
+            );
+
+        return model;
+    }
+
+    glm::vec4 KnightPartColor(
+        const glm::vec4& baseColor,
+        bool selected
+    )
+    {
+        if (
+            !selected
+        )
+        {
+            return baseColor;
+        }
+
+        return glm::mix(
+            baseColor,
+            glm::vec4(
+                1.0f,
+                0.72f,
+                0.16f,
+                1.0f
+            ),
+            0.42f
+        );
+    }
 
 
     // =====================================================
@@ -1647,27 +1740,20 @@ SDL_GPUTexture* Renderer::CreateOffscreenColorTexture(
     );
 }
 
+
 // =========================================================
-// Draw Entity
+// Draw Model With Color
 // =========================================================
 
-void Renderer::DrawEntity(
+void Renderer::DrawModelWithColor(
     SDL_GPUCommandBuffer* commandBuffer,
     SDL_GPURenderPass* renderPass,
     const glm::mat4& viewProjection,
-    const Entity& entity
+    const glm::mat4& model,
+    const glm::vec4& color,
+    Mesh& mesh
 )
 {
-    if (
-        !entity.visible
-    )
-    {
-        return;
-    }
-
-    const glm::mat4 model =
-        entity.transform.GetMatrix();
-
     TransformUniform transformData{};
 
     transformData.mvp =
@@ -1688,16 +1774,864 @@ void Renderer::DrawEntity(
         sizeof(TransformUniform)
     );
 
+    SDL_PushGPUVertexUniformData(
+        commandBuffer,
+        1,
+        glm::value_ptr(
+            color
+        ),
+        sizeof(glm::vec4)
+    );
+
+    mesh.Draw(
+        renderPass
+    );
+}
+
+// =========================================================
+// Draw Animated Knight
+// =========================================================
+
+void Renderer::DrawAnimatedKnight(
+    SDL_GPUCommandBuffer* commandBuffer,
+    SDL_GPURenderPass* renderPass,
+    const glm::mat4& viewProjection,
+    const Entity& entity
+)
+{
+    const glm::vec4 steel =
+        KnightPartColor(
+            {
+                0.74f,
+                0.77f,
+                0.84f,
+                1.0f
+            },
+            entity.editorSelected
+        );
+
+    const glm::vec4 darkSteel =
+        KnightPartColor(
+            {
+                0.28f,
+                0.31f,
+                0.37f,
+                1.0f
+            },
+            entity.editorSelected
+        );
+
+    const glm::vec4 clothRed =
+        KnightPartColor(
+            {
+                0.56f,
+                0.08f,
+                0.10f,
+                1.0f
+            },
+            entity.editorSelected
+        );
+
+    const glm::vec4 gold =
+        KnightPartColor(
+            {
+                0.86f,
+                0.73f,
+                0.24f,
+                1.0f
+            },
+            entity.editorSelected
+        );
+
+    const glm::vec4 leather =
+        KnightPartColor(
+            {
+                0.35f,
+                0.22f,
+                0.10f,
+                1.0f
+            },
+            entity.editorSelected
+        );
+
+    const glm::vec3 currentPosition =
+        entity.transform.position;
+
+    const glm::vec2 currentXZ =
+        {
+            currentPosition.x,
+            currentPosition.z
+        };
+
+    glm::vec2 previousXZ =
+        currentXZ;
+
+    const auto previousIt =
+        previousEntityPositions.find(
+            static_cast<std::uint64_t>(
+                entity.id
+            )
+        );
+
+    if (
+        previousIt !=
+        previousEntityPositions.end()
+    )
+    {
+        previousXZ =
+        {
+            previousIt->second.x,
+            previousIt->second.z
+        };
+    }
+
+    previousEntityPositions[
+        static_cast<std::uint64_t>(
+            entity.id
+        )
+    ] =
+        currentPosition;
+
+    const float horizontalDistance =
+        glm::length(
+            currentXZ -
+            previousXZ
+        );
+
+    const float speed =
+        horizontalDistance /
+        std::max(
+            animationDeltaTime,
+            0.0001f
+        );
+
+    const float targetMotion =
+        speed > 0.08f
+            ? 1.0f
+            : 0.0f;
+
+    float& motionBlend =
+        entityMotionBlend[
+            static_cast<std::uint64_t>(
+                entity.id
+            )
+        ];
+
+    motionBlend =
+        glm::mix(
+            motionBlend,
+            targetMotion,
+            glm::clamp(
+                animationDeltaTime *
+                    (
+                        targetMotion >
+                            motionBlend
+                            ? 10.0f
+                            : 7.0f
+                    ),
+                0.0f,
+                1.0f
+            )
+        );
+
+    const float walkPhase =
+        animationTime *
+        7.2f;
+
+    const float idlePhase =
+        animationTime *
+        2.0f;
+
+    const float walkSin =
+        std::sin(
+            walkPhase
+        );
+
+    const float walkCos =
+        std::cos(
+            walkPhase
+        );
+
+    const float legSwing =
+        walkSin *
+        33.0f *
+        motionBlend;
+
+    const float armSwing =
+        walkSin *
+        29.0f *
+        motionBlend;
+
+    const float torsoTwist =
+        walkCos *
+        4.0f *
+        motionBlend;
+
+    const float idleBreath =
+        std::sin(
+            idlePhase
+        ) *
+        (
+            2.2f -
+            1.0f *
+            motionBlend
+        );
+
+    const float bob =
+        std::abs(
+            walkSin
+        ) *
+        0.085f *
+        motionBlend +
+        std::sin(
+            idlePhase
+        ) *
+        0.018f;
+
+    const float capeSway =
+        std::sin(
+            animationTime *
+            3.1f
+        ) *
+        (
+            5.0f +
+            motionBlend *
+            8.0f
+        );
+
+    const glm::mat4 baseModel =
+        entity.transform.GetMatrix();
+
+    // Boots
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.18f,
+                0.14f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                0.0f,
+                0.0f
+            },
+            {
+                0.18f,
+                0.15f,
+                0.26f
+            }
+        ),
+        darkSteel,
+        cubeMesh
+    );
+
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.18f,
+                0.14f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                0.0f,
+                0.0f
+            },
+            {
+                0.18f,
+                0.15f,
+                0.26f
+            }
+        ),
+        darkSteel,
+        cubeMesh
+    );
+
+    // Lower legs
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.18f,
+                0.48f + bob,
+                0.0f
+            },
+            {
+                legSwing,
+                0.0f,
+                0.0f
+            },
+            {
+                0.14f,
+                0.28f,
+                0.14f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.18f,
+                0.48f + bob,
+                0.0f
+            },
+            {
+                -legSwing,
+                0.0f,
+                0.0f
+            },
+            {
+                0.14f,
+                0.28f,
+                0.14f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Upper legs
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.18f,
+                0.82f + bob,
+                0.02f
+            },
+            {
+                legSwing * 0.55f,
+                0.0f,
+                0.0f
+            },
+            {
+                0.16f,
+                0.26f,
+                0.16f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.18f,
+                0.82f + bob,
+                0.02f
+            },
+            {
+                -legSwing * 0.55f,
+                0.0f,
+                0.0f
+            },
+            {
+                0.16f,
+                0.26f,
+                0.16f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Pelvis
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                1.08f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                torsoTwist * 0.35f,
+                0.0f
+            },
+            {
+                0.40f,
+                0.13f,
+                0.20f
+            }
+        ),
+        darkSteel,
+        cubeMesh
+    );
+
+    // Torso
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                1.48f + bob,
+                0.0f
+            },
+            {
+                idleBreath,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.42f,
+                0.34f,
+                0.22f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Tabard front
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                1.42f + bob,
+                0.17f
+            },
+            {
+                0.0f,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.16f,
+                0.28f,
+                0.03f
+            }
+        ),
+        clothRed,
+        cubeMesh
+    );
+
+    // Cape
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                1.38f + bob,
+                -0.18f
+            },
+            {
+                12.0f + capeSway,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.24f,
+                0.38f,
+                0.03f
+            }
+        ),
+        clothRed,
+        cubeMesh
+    );
+
+    // Shoulders
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.32f,
+                1.74f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                0.0f,
+                10.0f
+            },
+            {
+                0.16f,
+                0.10f,
+                0.20f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.32f,
+                1.74f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                0.0f,
+                -10.0f
+            },
+            {
+                0.16f,
+                0.10f,
+                0.20f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Arms
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.42f,
+                1.38f + bob,
+                0.0f
+            },
+            {
+                -armSwing * 0.78f,
+                0.0f,
+                8.0f
+            },
+            {
+                0.12f,
+                0.32f,
+                0.12f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.42f,
+                1.38f + bob,
+                0.0f
+            },
+            {
+                armSwing,
+                0.0f,
+                -8.0f
+            },
+            {
+                0.12f,
+                0.32f,
+                0.12f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Helmet
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                2.02f + bob,
+                0.0f
+            },
+            {
+                idleBreath * 0.35f,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.24f,
+                0.24f,
+                0.24f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Helmet visor
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                2.00f + bob,
+                0.17f
+            },
+            {
+                0.0f,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.14f,
+                0.10f,
+                0.03f
+            }
+        ),
+        darkSteel,
+        cubeMesh
+    );
+
+    // Crest
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                2.30f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.06f,
+                0.10f,
+                0.06f
+            }
+        ),
+        gold,
+        cubeMesh
+    );
+
+    // Sword
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.64f,
+                1.12f + bob,
+                0.04f
+            },
+            {
+                18.0f + armSwing * 1.05f,
+                0.0f,
+                -18.0f
+            },
+            {
+                0.03f,
+                0.46f,
+                0.03f
+            }
+        ),
+        steel,
+        cubeMesh
+    );
+
+    // Sword guard
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.64f,
+                0.74f + bob,
+                0.04f
+            },
+            {
+                0.0f,
+                0.0f,
+                0.0f
+            },
+            {
+                0.12f,
+                0.02f,
+                0.03f
+            }
+        ),
+        gold,
+        cubeMesh
+    );
+
+    // Shield
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.62f,
+                1.20f + bob,
+                0.04f
+            },
+            {
+                6.0f - armSwing * 0.65f,
+                0.0f,
+                12.0f
+            },
+            {
+                0.07f,
+                0.30f,
+                0.24f
+            }
+        ),
+        darkSteel,
+        cubeMesh
+    );
+
+    // Shield center
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                -0.55f,
+                1.20f + bob,
+                0.12f
+            },
+            {
+                6.0f - armSwing * 0.65f,
+                0.0f,
+                12.0f
+            },
+            {
+                0.03f,
+                0.08f,
+                0.08f
+            }
+        ),
+        gold,
+        cubeMesh
+    );
+
+    // Belt
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        ComposeLocalModel(
+            baseModel,
+            {
+                0.0f,
+                1.22f + bob,
+                0.0f
+            },
+            {
+                0.0f,
+                torsoTwist,
+                0.0f
+            },
+            {
+                0.44f,
+                0.04f,
+                0.16f
+            }
+        ),
+        leather,
+        cubeMesh
+    );
+}
+
+// =========================================================
+// Draw Entity
+// =========================================================
+
+void Renderer::DrawEntity(
+    SDL_GPUCommandBuffer* commandBuffer,
+    SDL_GPURenderPass* renderPass,
+    const glm::mat4& viewProjection,
+    const Entity& entity
+)
+{
+    if (
+        !entity.visible
+    )
+    {
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "player_placeholder" ||
+        entity.name ==
+            "Player"
+    )
+    {
+        DrawAnimatedKnight(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            entity
+        );
+
+        return;
+    }
+
+    const glm::mat4 model =
+        entity.transform.GetMatrix();
+
     glm::vec4 renderColor =
         entity.color;
-
-    // =====================================================
-    // ASCII Renderer V2 foundation
-    //
-    // Ground still writes depth, but its old mesh color is
-    // hidden so the visible floor comes from world-space glyphs.
-    // Selecting Ground in the editor still highlights it.
-    // =====================================================
 
     if (
         entity.prefab ==
@@ -1731,22 +2665,18 @@ void Renderer::DrawEntity(
             );
     }
 
-    SDL_PushGPUVertexUniformData(
-        commandBuffer,
-        1,
-        glm::value_ptr(
-            renderColor
-        ),
-        sizeof(glm::vec4)
-    );
-
     if (
         entity.prefab ==
             "rock_small"
     )
     {
-        rockSmallMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            rockSmallMesh
         );
 
         return;
@@ -1757,8 +2687,13 @@ void Renderer::DrawEntity(
             "rock_wide"
     )
     {
-        rockWideMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            rockWideMesh
         );
 
         return;
@@ -1769,8 +2704,13 @@ void Renderer::DrawEntity(
             "rock_tall"
     )
     {
-        rockTallMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            rockTallMesh
         );
 
         return;
@@ -1781,8 +2721,13 @@ void Renderer::DrawEntity(
             "ruined_shrine"
     )
     {
-        ruinedShrineMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            ruinedShrineMesh
         );
 
         return;
@@ -1793,8 +2738,13 @@ void Renderer::DrawEntity(
             "broken_watchtower"
     )
     {
-        brokenWatchtowerMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            brokenWatchtowerMesh
         );
 
         return;
@@ -1805,8 +2755,13 @@ void Renderer::DrawEntity(
             "dead_tree_a"
     )
     {
-        deadTreeAMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            deadTreeAMesh
         );
 
         return;
@@ -1817,8 +2772,13 @@ void Renderer::DrawEntity(
             "dead_tree_b"
     )
     {
-        deadTreeBMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            deadTreeBMesh
         );
 
         return;
@@ -1829,8 +2789,13 @@ void Renderer::DrawEntity(
             "campfire"
     )
     {
-        campfireMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            campfireMesh
         );
 
         return;
@@ -1842,15 +2807,25 @@ void Renderer::DrawEntity(
         importedMesh.IsValid()
     )
     {
-        importedMesh.Draw(
-            renderPass
+        DrawModelWithColor(
+            commandBuffer,
+            renderPass,
+            viewProjection,
+            model,
+            renderColor,
+            importedMesh
         );
 
         return;
     }
 
-    cubeMesh.Draw(
-        renderPass
+    DrawModelWithColor(
+        commandBuffer,
+        renderPass,
+        viewProjection,
+        model,
+        renderColor,
+        cubeMesh
     );
 }
 
@@ -1864,6 +2839,22 @@ bool Renderer::Render(
     ImDrawData* uiDrawData
 )
 {
+    const float newAnimationTime =
+        static_cast<float>(
+            SDL_GetTicks()
+        ) *
+        0.001f;
+
+    animationDeltaTime =
+        std::max(
+            newAnimationTime -
+                animationTime,
+            1.0f / 240.0f
+        );
+
+    animationTime =
+        newAnimationTime;
+
     SDL_GPUCommandBuffer* commandBuffer =
         SDL_AcquireGPUCommandBuffer(
             device
@@ -2713,4 +3704,14 @@ void Renderer::Shutdown()
 
     renderHeight =
         0;
+
+    previousEntityPositions.clear();
+
+    entityMotionBlend.clear();
+
+    animationTime =
+        0.0f;
+
+    animationDeltaTime =
+        1.0f / 60.0f;
 }
