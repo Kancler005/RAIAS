@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
@@ -1005,11 +1006,11 @@ void GlyphRenderer::AppendMaterialGlyph(
             };
 
             size =
-                0.92f +
+                1.08f +
                 variationB *
-                0.52f +
+                0.62f +
                 materialStrength *
-                0.16f;
+                0.22f;
 
             ++grassGlyphCount;
 
@@ -1445,7 +1446,7 @@ bool GlyphRenderer::CreateDarkFantasyGround(
                     cellHash ^
                     0xF08763B1u
                 ) <
-                    0.23f
+                    0.36f
             )
             {
                 const glm::vec3 secondCenter
@@ -1485,6 +1486,246 @@ bool GlyphRenderer::CreateDarkFantasyGround(
                     materialStrength
                 );
             }
+        }
+    }
+
+    // =====================================================
+    // Fixed ambient campfire glyph effects.
+    //
+    // Campfire mesh bases live in the Scene at the same X/Z.
+    // The bright warm colors are recognized by the vertex shader
+    // and animated as flickering flame/spark glyphs.
+    // =====================================================
+
+    const std::array<glm::vec3, 3>
+        campfirePositions =
+    {{
+        {
+            1.8f,
+            worldY,
+            -6.3f
+        },
+        {
+            -6.6f,
+            worldY,
+            3.6f
+        },
+        {
+            8.2f,
+            worldY,
+            8.4f
+        }
+    }};
+
+    for (
+        std::size_t fireIndex = 0;
+        fireIndex <
+            campfirePositions.size();
+        ++fireIndex
+    )
+    {
+        const glm::vec3& fire =
+            campfirePositions[
+                fireIndex
+            ];
+
+        for (
+            int layer = 0;
+            layer < 9;
+            ++layer
+        )
+        {
+            const Uint32 fireHash =
+                HashGrid(
+                    static_cast<int>(
+                        fireIndex
+                    ) *
+                        31 +
+                    layer,
+                    layer *
+                        17,
+                    0xF17ECA5Eu
+                );
+
+            const float angle =
+                Hash01(
+                    fireHash
+                ) *
+                6.28318530718f;
+
+            const float radius =
+                0.06f +
+                Hash01(
+                    fireHash ^
+                    0xAAB31D7Fu
+                ) *
+                0.20f;
+
+            const float height =
+                0.36f +
+                static_cast<float>(
+                    layer
+                ) *
+                0.075f +
+                Hash01(
+                    fireHash ^
+                    0x7321F09Bu
+                ) *
+                0.10f;
+
+            const glm::vec3 center
+            {
+                fire.x +
+                    std::cos(
+                        angle
+                    ) *
+                    radius,
+
+                fire.y +
+                    height,
+
+                fire.z +
+                    std::sin(
+                        angle
+                    ) *
+                    radius
+            };
+
+            float glyph =
+                5.0f;
+
+            switch (
+                layer %
+                4
+            )
+            {
+                case 0:
+                {
+                    glyph =
+                        4.0f; // +
+
+                    break;
+                }
+
+                case 1:
+                {
+                    glyph =
+                        5.0f; // *
+
+                    break;
+                }
+
+                case 2:
+                {
+                    glyph =
+                        14.0f; // ^
+
+                    break;
+                }
+
+                default:
+                {
+                    glyph =
+                        9.0f; // apostrophe spark
+
+                    break;
+                }
+            }
+
+            const float heat =
+                Hash01(
+                    fireHash ^
+                    0x18C423D1u
+                );
+
+            const glm::vec4 color
+            {
+                0.95f,
+                0.25f +
+                    heat *
+                    0.30f,
+                0.035f,
+                1.0f
+            };
+
+            const float size =
+                0.78f +
+                heat *
+                0.46f;
+
+            AppendGlyphQuad(
+                vertices,
+                center,
+                glyph,
+                size,
+                color
+            );
+
+            ++glyphCount;
+        }
+
+        // A few rising sparks.
+        for (
+            int spark = 0;
+            spark < 4;
+            ++spark
+        )
+        {
+            const Uint32 sparkHash =
+                HashGrid(
+                    spark +
+                        static_cast<int>(
+                            fireIndex
+                        ) *
+                        97,
+                    spark *
+                        29,
+                    0x99431AC7u
+                );
+
+            const glm::vec3 sparkCenter
+            {
+                fire.x +
+                    (
+                        Hash01(
+                            sparkHash
+                        ) -
+                        0.5f
+                    ) *
+                    0.56f,
+
+                fire.y +
+                    0.95f +
+                    static_cast<float>(
+                        spark
+                    ) *
+                    0.18f,
+
+                fire.z +
+                    (
+                        Hash01(
+                            sparkHash ^
+                            0xCA7B104Fu
+                        ) -
+                        0.5f
+                    ) *
+                    0.56f
+            };
+
+            AppendGlyphQuad(
+                vertices,
+                sparkCenter,
+                9.0f,
+                0.62f,
+                {
+                    1.0f,
+                    0.42f,
+                    0.05f,
+                    1.0f
+                }
+            );
+
+            ++glyphCount;
         }
     }
 
@@ -1872,12 +2113,18 @@ bool GlyphRenderer::Render(
             0.0f
         );
 
+    const float timeSeconds =
+        static_cast<float>(
+            SDL_GetTicks()
+        ) *
+        0.001f;
+
     cameraData.glyphSettings =
     {
         0.18f,
         0.27f,
-        0.0f,
-        0.0f
+        timeSeconds,
+        1.0f
     };
 
     SDL_PushGPUVertexUniformData(

@@ -900,8 +900,77 @@ float4 main(
             0.16;
     }
 
+    // =====================================================
+    // Dark atmospheric haze
+    //
+    // This is deliberately subtle and screen-space for now.
+    // It reduces contrast toward the distant/top area and edges
+    // without filling the true-black background.
+    // =====================================================
+
+    float2 centeredUV =
+        input.uv *
+            2.0 -
+        1.0;
+
+    float vignette =
+        smoothstep(
+            0.52,
+            1.34,
+            length(
+                centeredUV *
+                float2(
+                    0.86,
+                    1.0
+                )
+            )
+        );
+
+    float distantHaze =
+        saturate(
+            (
+                0.60 -
+                input.uv.y
+            ) /
+            0.60
+        );
+
+    float atmosphere =
+        saturate(
+            distantHaze *
+                0.24 +
+            vignette *
+                0.16
+        );
+
+    float luminanceBeforeFog =
+        max(
+            GetLuminance(
+                objectColor
+            ),
+            0.001
+        );
+
+    float3 coldFogTint =
+        float3(
+            0.105,
+            0.115,
+            0.125
+        );
+
+    float3 foggedColor =
+        lerp(
+            objectColor,
+            objectColor *
+                0.60 +
+            coldFogTint *
+                luminanceBeforeFog *
+                0.42,
+            atmosphere
+        );
+
     float3 finalColor =
-        objectColor *
+        foggedColor *
         glyphMask;
 
     return float4(

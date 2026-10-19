@@ -14,6 +14,9 @@ namespace
     constexpr const char* WORLD_PACK_MARKER =
         "__RAI_WORLD_PACK_0_0_24__";
 
+    constexpr const char* VISUAL_PACK_MARKER =
+        "__RAI_VISUAL_PACK_0_0_26__";
+
     Entity& AddEnvironmentEntity(
         Scene& scene,
         const std::string& name,
@@ -57,15 +60,18 @@ bool WorldExpansion::Apply(
     Scene& scene
 )
 {
-    if (
+    bool changed =
+        false;
+
+    const bool basePackExists =
         scene.FindEntity(
             WORLD_PACK_MARKER
-        ) != nullptr
+        ) != nullptr;
+
+    if (
+        !basePackExists
     )
     {
-        return false;
-    }
-
     // =====================================================
     // Territory
     // =====================================================
@@ -269,5 +275,160 @@ bool WorldExpansion::Apply(
         "RAI World Expansion 0.0.24 applied: larger territory, 22 rocks, 2 structures."
     );
 
-    return true;
+        changed =
+            true;
+    }
+
+    // =====================================================
+    // 0.0.26 Dark World Visual Pack
+    // =====================================================
+
+    const bool visualPackExists =
+        scene.FindEntity(
+            VISUAL_PACK_MARKER
+        ) != nullptr;
+
+    if (
+        !visualPackExists
+    )
+    {
+        struct TreePlacement
+        {
+            const char* prefab;
+            glm::vec3 position;
+            float rotationY;
+            glm::vec3 scale;
+        };
+
+        const std::array<TreePlacement, 18>
+            trees =
+        {{
+            {"dead_tree_a", {-14.0f, -0.46f, -10.2f},  12.0f, {0.92f, 1.05f, 0.92f}},
+            {"dead_tree_b", {-11.8f, -0.46f, -12.6f}, -28.0f, {0.80f, 0.94f, 0.80f}},
+            {"dead_tree_a", { -8.2f, -0.46f, -14.4f},  47.0f, {1.10f, 1.16f, 1.10f}},
+            {"dead_tree_b", { -5.4f, -0.46f, -11.0f},  71.0f, {0.76f, 0.86f, 0.76f}},
+
+            {"dead_tree_a", {  6.0f, -0.46f, -14.0f}, -18.0f, {0.98f, 1.10f, 0.98f}},
+            {"dead_tree_b", { 10.6f, -0.46f, -12.4f},  33.0f, {0.82f, 0.96f, 0.82f}},
+            {"dead_tree_a", { 14.2f, -0.46f, -8.8f},   8.0f, {1.08f, 1.14f, 1.08f}},
+
+            {"dead_tree_b", {-15.1f, -0.46f,  1.2f},  62.0f, {0.86f, 0.94f, 0.86f}},
+            {"dead_tree_a", {-13.4f, -0.46f,  5.1f}, -42.0f, {1.00f, 1.10f, 1.00f}},
+            {"dead_tree_b", {-10.0f, -0.46f, 13.8f},  16.0f, {0.78f, 0.90f, 0.78f}},
+
+            {"dead_tree_a", {  5.2f, -0.46f, 13.4f},  29.0f, {1.04f, 1.14f, 1.04f}},
+            {"dead_tree_b", {  9.0f, -0.46f, 14.5f}, -55.0f, {0.84f, 0.96f, 0.84f}},
+            {"dead_tree_a", { 13.2f, -0.46f, 11.0f},  48.0f, {0.94f, 1.06f, 0.94f}},
+            {"dead_tree_b", { 15.1f, -0.46f,  5.5f},  79.0f, {0.80f, 0.90f, 0.80f}},
+
+            {"dead_tree_a", { -3.2f, -0.46f,  9.0f}, -14.0f, {0.88f, 0.98f, 0.88f}},
+            {"dead_tree_b", {  3.2f, -0.46f, 10.2f},  38.0f, {0.76f, 0.88f, 0.76f}},
+            {"dead_tree_a", { 12.0f, -0.46f,  1.0f},  64.0f, {0.90f, 1.00f, 0.90f}},
+            {"dead_tree_b", {-11.0f, -0.46f, -2.0f}, -32.0f, {0.78f, 0.90f, 0.78f}}
+        }};
+
+        int treeIndex =
+            1;
+
+        for (
+            const TreePlacement& tree :
+            trees
+        )
+        {
+            AddEnvironmentEntity(
+                scene,
+                "Dead_Tree_" +
+                    std::to_string(
+                        treeIndex
+                    ),
+                tree.prefab,
+                tree.position,
+                {
+                    0.0f,
+                    tree.rotationY,
+                    0.0f
+                },
+                tree.scale,
+                {
+                    0.22f,
+                    0.19f,
+                    0.16f,
+                    1.0f
+                },
+                true
+            );
+
+            ++treeIndex;
+        }
+
+        const std::array<glm::vec3, 3>
+            campfires =
+        {{
+            { 1.8f, -0.46f, -6.3f},
+            {-6.6f, -0.46f,  3.6f},
+            { 8.2f, -0.46f,  8.4f}
+        }};
+
+        int campfireIndex =
+            1;
+
+        for (
+            const glm::vec3& position :
+            campfires
+        )
+        {
+            AddEnvironmentEntity(
+                scene,
+                "Campfire_" +
+                    std::to_string(
+                        campfireIndex
+                    ),
+                "campfire",
+                position,
+                {
+                    0.0f,
+                    static_cast<float>(
+                        campfireIndex *
+                        27
+                    ),
+                    0.0f
+                },
+                {
+                    1.0f,
+                    1.0f,
+                    1.0f
+                },
+                {
+                    0.26f,
+                    0.18f,
+                    0.11f,
+                    1.0f
+                },
+                false
+            );
+
+            ++campfireIndex;
+        }
+
+        Entity& visualMarker =
+            scene.CreateEntity(
+                VISUAL_PACK_MARKER,
+                "editor_marker"
+            );
+
+        visualMarker.visible =
+            false;
+
+        visualMarker.collidable =
+            false;
+
+        SDL_Log(
+            "RAI Visual Pack 0.0.26 applied: 18 dead trees + 3 campfires."
+        );
+
+        changed =
+            true;
+    }
+
+    return changed;
 }

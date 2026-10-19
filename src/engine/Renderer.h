@@ -92,6 +92,10 @@ private:
     Mesh ruinedShrineMesh;
     Mesh brokenWatchtowerMesh;
 
+    Mesh deadTreeAMesh;
+    Mesh deadTreeBMesh;
+    Mesh campfireMesh;
+
     // First imported GLB/glTF mesh.
     // 0.0.18+ will move this into AssetManager.
     Mesh importedMesh;

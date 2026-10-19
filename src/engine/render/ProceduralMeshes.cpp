@@ -429,6 +429,159 @@ namespace
             {}
         );
     }
+    void AddBeam(
+        std::vector<MeshVertex>& vertices,
+        const glm::vec3& start,
+        const glm::vec3& end,
+        float halfWidth
+    )
+    {
+        glm::vec3 axis =
+            end -
+            start;
+
+        const float axisLengthSquared =
+            glm::dot(
+                axis,
+                axis
+            );
+
+        if (
+            axisLengthSquared <
+            0.000001f
+        )
+        {
+            return;
+        }
+
+        axis =
+            glm::normalize(
+                axis
+            );
+
+        glm::vec3 helper =
+            std::abs(
+                axis.y
+            ) <
+            0.92f
+                ? glm::vec3(
+                    0.0f,
+                    1.0f,
+                    0.0f
+                )
+                : glm::vec3(
+                    1.0f,
+                    0.0f,
+                    0.0f
+                );
+
+        glm::vec3 right =
+            glm::normalize(
+                glm::cross(
+                    axis,
+                    helper
+                )
+            ) *
+            halfWidth;
+
+        glm::vec3 forward =
+            glm::normalize(
+                glm::cross(
+                    right,
+                    axis
+                )
+            ) *
+            halfWidth;
+
+        const glm::vec3 s0 =
+            start -
+            right -
+            forward;
+
+        const glm::vec3 s1 =
+            start +
+            right -
+            forward;
+
+        const glm::vec3 s2 =
+            start +
+            right +
+            forward;
+
+        const glm::vec3 s3 =
+            start -
+            right +
+            forward;
+
+        const glm::vec3 e0 =
+            end -
+            right -
+            forward;
+
+        const glm::vec3 e1 =
+            end +
+            right -
+            forward;
+
+        const glm::vec3 e2 =
+            end +
+            right +
+            forward;
+
+        const glm::vec3 e3 =
+            end -
+            right +
+            forward;
+
+        AddQuad(
+            vertices,
+            s0,
+            s1,
+            e1,
+            e0
+        );
+
+        AddQuad(
+            vertices,
+            s1,
+            s2,
+            e2,
+            e1
+        );
+
+        AddQuad(
+            vertices,
+            s2,
+            s3,
+            e3,
+            e2
+        );
+
+        AddQuad(
+            vertices,
+            s3,
+            s0,
+            e0,
+            e3
+        );
+
+        AddQuad(
+            vertices,
+            s3,
+            s2,
+            s1,
+            s0
+        );
+
+        AddQuad(
+            vertices,
+            e0,
+            e1,
+            e2,
+            e3
+        );
+    }
+
 }
 
 // ============================================================
@@ -888,6 +1041,331 @@ bool ProceduralMeshes::CreateBrokenWatchtower(
             0.43f
         }
     );
+
+    return mesh.Create(
+        device,
+        vertices,
+        {}
+    );
+}
+
+
+// ============================================================
+// Dead Tree A
+// ============================================================
+
+bool ProceduralMeshes::CreateDeadTreeA(
+    SDL_GPUDevice* device,
+    Mesh& mesh
+)
+{
+    std::vector<MeshVertex>
+        vertices;
+
+    AddBeam(
+        vertices,
+        {
+            0.00f,
+            -0.46f,
+            0.00f
+        },
+        {
+            0.10f,
+            3.60f,
+            0.04f
+        },
+        0.22f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.04f,
+            1.70f,
+            0.02f
+        },
+        {
+            -1.18f,
+            2.82f,
+            0.24f
+        },
+        0.13f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.06f,
+            2.16f,
+            0.04f
+        },
+        {
+            1.10f,
+            3.12f,
+            -0.28f
+        },
+        0.12f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            -0.70f,
+            2.37f,
+            0.15f
+        },
+        {
+            -1.52f,
+            3.16f,
+            0.40f
+        },
+        0.075f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.68f,
+            2.72f,
+            -0.17f
+        },
+        {
+            1.48f,
+            3.64f,
+            -0.50f
+        },
+        0.070f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.10f,
+            3.18f,
+            0.03f
+        },
+        {
+            -0.38f,
+            4.03f,
+            -0.18f
+        },
+        0.09f
+    );
+
+    return mesh.Create(
+        device,
+        vertices,
+        {}
+    );
+}
+
+// ============================================================
+// Dead Tree B
+// ============================================================
+
+bool ProceduralMeshes::CreateDeadTreeB(
+    SDL_GPUDevice* device,
+    Mesh& mesh
+)
+{
+    std::vector<MeshVertex>
+        vertices;
+
+    AddBeam(
+        vertices,
+        {
+            0.05f,
+            -0.46f,
+            0.00f
+        },
+        {
+            -0.20f,
+            2.05f,
+            0.12f
+        },
+        0.25f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            -0.20f,
+            1.92f,
+            0.12f
+        },
+        {
+            0.36f,
+            3.78f,
+            -0.14f
+        },
+        0.17f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            -0.14f,
+            1.34f,
+            0.08f
+        },
+        {
+            -1.38f,
+            2.42f,
+            -0.34f
+        },
+        0.12f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.04f,
+            2.45f,
+            -0.02f
+        },
+        {
+            1.42f,
+            3.06f,
+            0.32f
+        },
+        0.10f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            -0.82f,
+            1.96f,
+            -0.22f
+        },
+        {
+            -1.74f,
+            2.24f,
+            -0.62f
+        },
+        0.065f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.74f,
+            2.76f,
+            0.18f
+        },
+        {
+            1.66f,
+            3.68f,
+            0.54f
+        },
+        0.065f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            0.25f,
+            3.34f,
+            -0.10f
+        },
+        {
+            -0.16f,
+            4.28f,
+            0.16f
+        },
+        0.085f
+    );
+
+    return mesh.Create(
+        device,
+        vertices,
+        {}
+    );
+}
+
+// ============================================================
+// Campfire Base
+// ============================================================
+
+bool ProceduralMeshes::CreateCampfire(
+    SDL_GPUDevice* device,
+    Mesh& mesh
+)
+{
+    std::vector<MeshVertex>
+        vertices;
+
+    // Crossed burnt logs.
+    AddBeam(
+        vertices,
+        {
+            -0.58f,
+            0.16f,
+            -0.20f
+        },
+        {
+            0.58f,
+            0.20f,
+            0.20f
+        },
+        0.11f
+    );
+
+    AddBeam(
+        vertices,
+        {
+            -0.50f,
+            0.22f,
+            0.34f
+        },
+        {
+            0.50f,
+            0.16f,
+            -0.34f
+        },
+        0.10f
+    );
+
+    // Stone ring.
+    constexpr int stoneCount =
+        8;
+
+    for (
+        int i = 0;
+        i < stoneCount;
+        ++i
+    )
+    {
+        const float angle =
+            static_cast<float>(
+                i
+            ) /
+            static_cast<float>(
+                stoneCount
+            ) *
+            PI *
+            2.0f;
+
+        AddBox(
+            vertices,
+            {
+                std::cos(
+                    angle
+                ) *
+                    0.62f,
+                0.11f,
+                std::sin(
+                    angle
+                ) *
+                    0.62f
+            },
+            {
+                0.16f,
+                0.11f,
+                0.14f
+            }
+        );
+    }
 
     return mesh.Create(
         device,

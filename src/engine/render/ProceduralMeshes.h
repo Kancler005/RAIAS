@@ -30,4 +30,19 @@ namespace ProceduralMeshes
         SDL_GPUDevice* device,
         Mesh& mesh
     );
+
+    bool CreateDeadTreeA(
+        SDL_GPUDevice* device,
+        Mesh& mesh
+    );
+
+    bool CreateDeadTreeB(
+        SDL_GPUDevice* device,
+        Mesh& mesh
+    );
+
+    bool CreateCampfire(
+        SDL_GPUDevice* device,
+        Mesh& mesh
+    );
 }

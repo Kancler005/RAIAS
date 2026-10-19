@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(RAIAS
-        VERSION 0.0.25
+        VERSION 0.0.26
         LANGUAGES CXX
 )
 

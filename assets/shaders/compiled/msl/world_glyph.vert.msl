@@ -31,7 +31,64 @@ struct main0_in
 vertex main0_out main0(main0_in in [[stage_in]], constant type_GlyphCameraData& GlyphCameraData [[buffer(0)]])
 {
     main0_out out = {};
-    out.gl_Position = GlyphCameraData.viewProjection * float4((in.in_var_TEXCOORD0 + ((GlyphCameraData.cameraRight.xyz * in.in_var_TEXCOORD1.x) * (GlyphCameraData.glyphSettings.x * in.in_var_TEXCOORD3))) + ((GlyphCameraData.cameraUp.xyz * in.in_var_TEXCOORD1.y) * (GlyphCameraData.glyphSettings.y * in.in_var_TEXCOORD3)), 1.0);
+    float _74 = GlyphCameraData.glyphSettings.x * in.in_var_TEXCOORD3;
+    float _77 = GlyphCameraData.glyphSettings.y * in.in_var_TEXCOORD3;
+    bool _82;
+    if (in.in_var_TEXCOORD2 >= 9.0)
+    {
+        _82 = in.in_var_TEXCOORD2 <= 12.0;
+    }
+    else
+    {
+        _82 = false;
+    }
+    float3 _116;
+    if (_82)
+    {
+        float _95 = (in.in_var_TEXCOORD0.x * 0.829999983310699462890625) + (in.in_var_TEXCOORD0.z * 0.61000001430511474609375);
+        _116 = in.in_var_TEXCOORD0 + ((((GlyphCameraData.cameraRight.xyz * ((sin((GlyphCameraData.glyphSettings.z * 1.5499999523162841796875) + _95) * 0.0599999986588954925537109375) + (sin((GlyphCameraData.glyphSettings.z * 0.730000019073486328125) + (_95 * 1.90999996662139892578125)) * 0.02500000037252902984619140625))) * GlyphCameraData.glyphSettings.w) * fast::clamp(in.in_var_TEXCOORD1.y + 0.5, 0.0, 1.0)) * in.in_var_TEXCOORD3);
+    }
+    else
+    {
+        _116 = in.in_var_TEXCOORD0;
+    }
+    bool _125;
+    if (in.in_var_TEXCOORD4.x > 0.699999988079071044921875)
+    {
+        _125 = in.in_var_TEXCOORD4.y > 0.119999997317790985107421875;
+    }
+    else
+    {
+        _125 = false;
+    }
+    bool _131;
+    if (_125)
+    {
+        _131 = in.in_var_TEXCOORD4.z < 0.23999999463558197021484375;
+    }
+    else
+    {
+        _131 = false;
+    }
+    float _169;
+    float _170;
+    float3 _171;
+    if (_131)
+    {
+        float _140 = (in.in_var_TEXCOORD0.x * 3.099999904632568359375) + (in.in_var_TEXCOORD0.z * 2.7000000476837158203125);
+        float _143 = sin((GlyphCameraData.glyphSettings.z * 7.0) + _140);
+        float _147 = sin((GlyphCameraData.glyphSettings.z * 11.0) + (_140 * 0.709999978542327880859375));
+        _169 = _77 * (1.0 + (_143 * 0.12999999523162841796875));
+        _170 = _74 * (1.0 + (_147 * 0.100000001490116119384765625));
+        _171 = (_116 + ((GlyphCameraData.cameraUp.xyz * (0.02999999932944774627685546875 + (_143 * 0.026000000536441802978515625))) * in.in_var_TEXCOORD3)) + (((GlyphCameraData.cameraRight.xyz * _147) * 0.02500000037252902984619140625) * in.in_var_TEXCOORD3);
+    }
+    else
+    {
+        _169 = _77;
+        _170 = _74;
+        _171 = _116;
+    }
+    out.gl_Position = GlyphCameraData.viewProjection * float4((_171 + ((GlyphCameraData.cameraRight.xyz * in.in_var_TEXCOORD1.x) * _170)) + ((GlyphCameraData.cameraUp.xyz * in.in_var_TEXCOORD1.y) * _169), 1.0);
     out.out_var_TEXCOORD0 = in.in_var_TEXCOORD1 + float2(0.5);
     out.out_var_TEXCOORD1 = in.in_var_TEXCOORD2;
     out.out_var_TEXCOORD2 = in.in_var_TEXCOORD4;

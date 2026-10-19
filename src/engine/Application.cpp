@@ -19,10 +19,10 @@ namespace
         "assets/worlds/test_world.json";
 
     constexpr const char* GAME_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.25";
+        "RAI: Ashes of Eternity | Engine 0.0.26";
 
     constexpr const char* EDITOR_TITLE =
-        "RAI: Ashes of Eternity | Engine 0.0.25 | EDITOR MODE";
+        "RAI: Ashes of Eternity | Engine 0.0.26 | EDITOR MODE";
 }
 
 // =========================================================

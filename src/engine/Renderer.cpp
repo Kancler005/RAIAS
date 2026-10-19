@@ -689,6 +689,18 @@ bool Renderer::Initialize(
         !ProceduralMeshes::CreateBrokenWatchtower(
             device,
             brokenWatchtowerMesh
+        ) ||
+        !ProceduralMeshes::CreateDeadTreeA(
+            device,
+            deadTreeAMesh
+        ) ||
+        !ProceduralMeshes::CreateDeadTreeB(
+            device,
+            deadTreeBMesh
+        ) ||
+        !ProceduralMeshes::CreateCampfire(
+            device,
+            campfireMesh
         )
     )
     {
@@ -700,7 +712,7 @@ bool Renderer::Initialize(
     }
 
     SDL_Log(
-        "Procedural world models ready: 3 rocks + shrine + watchtower."
+        "Procedural world models ready: 3 rocks + shrine + watchtower + 2 dead trees + campfire."
     );
 
     // =====================================================
@@ -1790,6 +1802,42 @@ void Renderer::DrawEntity(
 
     if (
         entity.prefab ==
+            "dead_tree_a"
+    )
+    {
+        deadTreeAMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "dead_tree_b"
+    )
+    {
+        deadTreeBMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
+            "campfire"
+    )
+    {
+        campfireMesh.Draw(
+            renderPass
+        );
+
+        return;
+    }
+
+    if (
+        entity.prefab ==
             "enemy_placeholder" &&
         importedMesh.IsValid()
     )
@@ -2593,6 +2641,12 @@ void Renderer::Shutdown()
         offscreenSampler =
             nullptr;
     }
+
+    campfireMesh.Destroy();
+
+    deadTreeBMesh.Destroy();
+
+    deadTreeAMesh.Destroy();
 
     brokenWatchtowerMesh.Destroy();
 
